@@ -574,7 +574,7 @@ void buildPolyscopeGui() {
   ImGui::SetNextWindowPos(ImVec2(rightWindowX, imguiStackMargin));
   ImGui::SetNextWindowSize(ImVec2(leftWindowsWidth, 0.));
 
-  ImGui::Begin("Polyscope", &showPolyscopeWindow);
+  ImGui::Begin("Visualization menu", &showPolyscopeWindow);
 
   if (ImGui::Button("Reset View")) {
     view::flyToHomeView();
