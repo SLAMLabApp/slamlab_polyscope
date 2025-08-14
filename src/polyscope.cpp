@@ -570,7 +570,8 @@ void buildPolyscopeGui() {
 
   // Create window
   static bool showPolyscopeWindow = true;
-  ImGui::SetNextWindowPos(ImVec2(imguiStackMargin, imguiStackMargin));
+  float rightWindowX = view::windowWidth - leftWindowsWidth - imguiStackMargin;
+  ImGui::SetNextWindowPos(ImVec2(rightWindowX, imguiStackMargin));
   ImGui::SetNextWindowSize(ImVec2(leftWindowsWidth, 0.));
 
   ImGui::Begin("Polyscope", &showPolyscopeWindow);
@@ -608,7 +609,10 @@ void buildPolyscopeGui() {
   }
   if (ImGui::IsItemHovered()) {
 
-    ImGui::SetNextWindowPos(ImVec2(2 * imguiStackMargin + leftWindowsWidth, imguiStackMargin));
+    float currentWindowWidth = ImGui::GetWindowWidth();
+    float currentWindowX = view::windowWidth - currentWindowWidth - imguiStackMargin;
+    float controlsWindowX = currentWindowX - 440 - imguiStackMargin;
+    ImGui::SetNextWindowPos(ImVec2(controlsWindowX, imguiStackMargin));
     ImGui::SetNextWindowSize(ImVec2(0., 0.));
 
     // clang-format off
@@ -682,6 +686,13 @@ void buildPolyscopeGui() {
   lastWindowHeightPolyscope = imguiStackMargin + ImGui::GetWindowHeight();
   leftWindowsWidth = ImGui::GetWindowWidth();
 
+  // Keep window anchored to the right side
+  ImVec2 currentPos = ImGui::GetWindowPos();
+  float desiredX = view::windowWidth - leftWindowsWidth - imguiStackMargin;
+  if (currentPos.x != desiredX) {
+    ImGui::SetWindowPos(ImVec2(desiredX, currentPos.y));
+  }
+
   ImGui::End();
 }
 
@@ -689,7 +700,8 @@ void buildStructureGui() {
   // Create window
   static bool showStructureWindow = true;
 
-  ImGui::SetNextWindowPos(ImVec2(imguiStackMargin, lastWindowHeightPolyscope + 2 * imguiStackMargin));
+  float rightWindowX = view::windowWidth - leftWindowsWidth - imguiStackMargin;
+  ImGui::SetNextWindowPos(ImVec2(rightWindowX, lastWindowHeightPolyscope + 2 * imguiStackMargin));
   ImGui::SetNextWindowSize(
       ImVec2(leftWindowsWidth, view::windowHeight - lastWindowHeightPolyscope - 3 * imguiStackMargin));
   ImGui::Begin("Structures", &showStructureWindow);
@@ -750,6 +762,13 @@ void buildStructureGui() {
   }
 
   leftWindowsWidth = ImGui::GetWindowWidth();
+
+  // Keep window anchored to the right side
+  ImVec2 currentPos = ImGui::GetWindowPos();
+  float desiredX = view::windowWidth - leftWindowsWidth - imguiStackMargin;
+  if (currentPos.x != desiredX) {
+    ImGui::SetWindowPos(ImVec2(desiredX, currentPos.y));
+  }
 
   ImGui::End();
 }
