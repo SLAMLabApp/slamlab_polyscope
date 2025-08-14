@@ -1,7 +1,8 @@
 // Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
 
 #include "polyscope/view.h"
-
+#include "polyscope/pick.h"
+#include "polyscope/point_cloud.h"
 #include "polyscope/polyscope.h"
 #include "polyscope/utilities.h"
 
@@ -41,7 +42,7 @@ glm::vec3& flightTargetViewT = state::globalContext.flightTargetViewT;
 glm::vec3& flightInitialViewT = state::globalContext.flightInitialViewT;
 float& flightTargetFov = state::globalContext.flightTargetFov;
 float& flightInitialFov = state::globalContext.flightInitialFov;
-
+glm::vec3& selectedRotationPoint = state::globalContext.selectedRotationPoint;
 
 // Default values
 const int defaultWindowWidth = 1280;
@@ -84,6 +85,9 @@ std::string to_string(NavigateStyle style) {
   case NavigateStyle::FirstPerson:
     return "First Person";
     break;
+  case NavigateStyle::PointSelection:
+    return "Point Selection";
+    break;
   }
 
   return ""; // unreachable
@@ -115,6 +119,40 @@ glm::vec2 bufferIndsToScreenCoords(int xPos, int yPos) {
 
 glm::vec2 bufferIndsToScreenCoords(glm::ivec2 bufferInds) {
   return bufferIndsToScreenCoords(bufferInds.x, bufferInds.y);
+}
+
+// Function to update rotation point marker
+void updateRotationPointMarker() {
+  const std::string markerName = "ROTATION_POINT_MARKER";
+
+  if (getNavigateStyle() != NavigateStyle::PointSelection) {
+    // Hide marker if not in PointSelection mode
+    if (hasPointCloud(markerName)) {
+      getPointCloud(markerName)->setEnabled(false);
+    }
+    return;
+  }
+
+  glm::vec3 rotationPoint = getSelectedRotationPoint();
+
+  // Create or update the marker
+  std::vector<glm::vec3> markerPoint = {rotationPoint};
+
+  if (!hasPointCloud(markerName)) {
+    // Create new marker
+    registerPointCloud(markerName, markerPoint);
+
+    // Configure the marker appearance
+    getPointCloud(markerName)->setPointRenderMode(PointRenderMode::Sphere);
+    getPointCloud(markerName)->setPointRadius(0.05f);                      // Make it large and visible
+    getPointCloud(markerName)->setPointColor(glm::vec3(0.0f, 0.8f, 0.8f)); // Turquoise color
+  } else {
+    // Update existing marker position
+    getPointCloud(markerName)->updatePointPositions(markerPoint);
+  }
+
+  // Ensure the marker is visible
+  getPointCloud(markerName)->setEnabled(true);
 }
 
 void processRotate(glm::vec2 startP, glm::vec2 endP) {
@@ -228,6 +266,28 @@ void processRotate(glm::vec2 startP, glm::vec2 endP) {
 
     break;
   }
+  case NavigateStyle::PointSelection: {
+    glm::vec2 dragDelta = endP - startP;
+    float delTheta = 2.0 * dragDelta.x * moveScale;
+    float delPhi = 2.0 * dragDelta.y * moveScale;
+
+    // Translate to selected rotation point (or origin if none selected)
+    viewMat = glm::translate(viewMat, selectedRotationPoint);
+
+    // Rotation about the vertical axis (up direction)
+    glm::mat4x4 thetaCamR = glm::rotate(glm::mat4x4(1.0), delTheta, getUpVec());
+    viewMat = viewMat * thetaCamR;
+
+    // Rotation about the horizontal axis (right direction relative to current camera)
+    glm::vec3 frameLookDir, frameUpDir, frameRightDir;
+    getCameraFrame(frameLookDir, frameUpDir, frameRightDir);
+    glm::mat4x4 phiCamR = glm::rotate(glm::mat4x4(1.0), -delPhi, frameRightDir);
+    viewMat = viewMat * phiCamR;
+
+    // Undo translation
+    viewMat = glm::translate(viewMat, -selectedRotationPoint);
+    break;
+  }
   }
 
   requestRedraw();
@@ -289,6 +349,26 @@ void processKeyboardNavigation(ImGuiIO& io) {
 
 
   // == Non movement-related
+
+  // ctrl+click for point selection (for PointSelection navigation style)
+  if (io.KeyCtrl && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+    if (getNavigateStyle() == NavigateStyle::PointSelection) {
+      ImVec2 mousePos = ImGui::GetMousePos();
+      glm::vec2 screenCoords(mousePos.x, mousePos.y);
+
+      // Perform pick query to see what's under the mouse
+      PickResult pickResult = pickAtScreenCoords(screenCoords);
+
+      if (pickResult.isHit && pickResult.structure != nullptr) {
+        // Check if it's a point cloud structure, but not the rotation point marker
+        if (pickResult.structureType == "Point Cloud" && pickResult.structure->name != "ROTATION_POINT_MARKER") {
+          // Set the picked position as the new rotation center
+          setSelectedRotationPoint(pickResult.position);
+        }
+      }
+    }
+  }
+
 
   // ctrl-c
   if (io.KeyCtrl && render::engine->isKeyPressed('c')) {
@@ -729,6 +809,10 @@ void setCameraFromJson(std::string jsonData, bool flyTo) { setViewFromJson(jsonD
 
 void buildViewGui() {
 
+  // Process input (keyboard and mouse)
+  ImGuiIO& io = ImGui::GetIO();
+  processKeyboardNavigation(io);
+
   ImGui::SetNextItemOpen(false, ImGuiCond_FirstUseEver);
   if (openSlicePlaneMenu) {
     // need to recursively open this tree node to respect slice plane menu open flag
@@ -741,8 +825,9 @@ void buildViewGui() {
     std::string viewStyleName = to_string(view::style);
 
     ImGui::PushItemWidth(120);
-    std::array<NavigateStyle, 5> styles{NavigateStyle::Turntable, NavigateStyle::Free, NavigateStyle::Planar,
-                                        NavigateStyle::None, NavigateStyle::FirstPerson};
+    std::array<NavigateStyle, 6> styles{NavigateStyle::Turntable,   NavigateStyle::Free,
+                                        NavigateStyle::Planar,      NavigateStyle::None,
+                                        NavigateStyle::FirstPerson, NavigateStyle::PointSelection};
     if (ImGui::BeginCombo("##View Style", viewStyleName.c_str())) {
 
       for (NavigateStyle s : styles) {
@@ -757,6 +842,25 @@ void buildViewGui() {
     ImGui::SameLine();
 
     ImGui::Text("Camera Style");
+
+    // Show rotation point controls for PointSelection navigation style
+    if (view::style == NavigateStyle::PointSelection) {
+      ImGui::Text("Rotation Point:");
+      ImGui::PushItemWidth(200);
+      bool changed = false;
+      glm::vec3 rotPoint = selectedRotationPoint;
+      changed |= ImGui::InputFloat3("##rotationPoint", &rotPoint[0]);
+      if (changed) {
+        setSelectedRotationPoint(rotPoint);
+      }
+      ImGui::PopItemWidth();
+      ImGui::SameLine();
+      if (ImGui::Button("Reset to Origin")) {
+        setSelectedRotationPoint(glm::vec3(0.0f, 0.0f, 0.0f));
+      }
+      ImGui::Text("Tip: Ctrl+click on a point cloud point to set rotation center");
+    }
+
 
     { // == Up direction
       ImGui::PushItemWidth(120);
@@ -1006,6 +1110,9 @@ void buildViewGui() {
     ImGui::PopItemWidth();
     ImGui::TreePop();
   }
+
+  // Update rotation point marker
+  updateRotationPointMarker();
 }
 
 void setUpDir(UpDir newUpDir, bool animateFlight) {
@@ -1072,12 +1179,23 @@ glm::vec3 getFrontVec() {
 }
 
 
+glm::vec3 getSelectedRotationPoint() { return selectedRotationPoint; }
+
+
 void setNavigateStyle(NavigateStyle newStyle, bool animateFlight) {
   NavigateStyle oldStyle = style;
   style = newStyle;
 
+  // Reset rotation point when leaving PointSelection mode
+  if (oldStyle == NavigateStyle::PointSelection && newStyle != NavigateStyle::PointSelection) {
+    selectedRotationPoint = glm::vec3(0.0f, 0.0f, 0.0f);
+  }
+
+  // Update rotation point marker when navigation style changes
+  updateRotationPointMarker();
+
   // for a few combinations of views, we can leave the camera where it is rather than resetting to the home view
-  if (newStyle == NavigateStyle::Free ||
+  if (newStyle == NavigateStyle::Free || newStyle == NavigateStyle::PointSelection ||
       (newStyle == NavigateStyle::FirstPerson && oldStyle == NavigateStyle::Turntable)) {
     return;
   }
@@ -1099,6 +1217,12 @@ void setWindowResizable(bool isResizable) {
 }
 
 bool getWindowResizable() { return windowResizable; }
+
+void setSelectedRotationPoint(glm::vec3 point) {
+  selectedRotationPoint = point;
+  updateRotationPointMarker();
+  requestRedraw();
+}
 
 
 } // namespace view

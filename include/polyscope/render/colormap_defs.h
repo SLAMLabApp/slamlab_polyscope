@@ -26,6 +26,7 @@ extern const std::vector<glm::vec3> CM_TURBO;
 extern const std::vector<glm::vec3> CM_REDS;
 extern const std::vector<glm::vec3> CM_PHASE;
 extern const std::vector<glm::vec3> CM_HSV;
+extern const std::vector<glm::vec3> CM_SIGNAL;
 
 
 } // namespace render

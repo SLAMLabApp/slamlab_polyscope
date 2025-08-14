@@ -97,6 +97,7 @@ struct Context {
   glm::dualquat flightTargetViewR, flightInitialViewR;
   glm::vec3 flightTargetViewT, flightInitialViewT;
   float flightTargetFov, flightInitialFov;
+  glm::vec3 selectedRotationPoint = glm::vec3(0.0f, 0.0f, 0.0f);
 
   // ======================================================
   // === Picking globals from pick.h / pick.cpp

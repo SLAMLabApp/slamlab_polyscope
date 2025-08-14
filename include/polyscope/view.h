@@ -57,6 +57,9 @@ extern glm::mat4x4& viewMat;
 extern double& fov; // in the y direction
 extern ProjectionMode& projectionMode;
 
+// Selected point for PointSelection navigation style
+extern glm::vec3& selectedRotationPoint;
+
 // "Flying" view members
 extern bool& midflight;
 extern float& flightStartTime;
@@ -132,6 +135,9 @@ NavigateStyle getNavigateStyle();
 void setWindowResizable(bool isResizable);
 bool getWindowResizable();
 
+// Set/get the selected rotation point for PointSelection navigation style
+void setSelectedRotationPoint(glm::vec3 point);
+glm::vec3 getSelectedRotationPoint();
 
 // == Utility functions related to the view
 
