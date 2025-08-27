@@ -85,8 +85,8 @@ std::string to_string(NavigateStyle style) {
   case NavigateStyle::FirstPerson:
     return "First Person";
     break;
-  case NavigateStyle::PointSelection:
-    return "Point Selection";
+  case NavigateStyle::TurntablePlus:
+    return "Turntable+";
     break;
   }
 
@@ -125,8 +125,8 @@ glm::vec2 bufferIndsToScreenCoords(glm::ivec2 bufferInds) {
 void updateRotationPointMarker() {
   const std::string markerName = "ROTATION_POINT_MARKER";
 
-  if (getNavigateStyle() != NavigateStyle::PointSelection) {
-    // Hide marker if not in PointSelection mode
+  if (getNavigateStyle() != NavigateStyle::TurntablePlus) {
+    // Hide marker if not in TurntablePlus mode
     if (hasPointCloud(markerName)) {
       getPointCloud(markerName)->setEnabled(false);
     }
@@ -266,7 +266,7 @@ void processRotate(glm::vec2 startP, glm::vec2 endP) {
 
     break;
   }
-  case NavigateStyle::PointSelection: {
+  case NavigateStyle::TurntablePlus: {
     glm::vec2 dragDelta = endP - startP;
     float delTheta = 2.0 * dragDelta.x * moveScale;
     float delPhi = 2.0 * dragDelta.y * moveScale;
@@ -350,9 +350,9 @@ void processKeyboardNavigation(ImGuiIO& io) {
 
   // == Non movement-related
 
-  // ctrl+click for point selection (for PointSelection navigation style)
+  // ctrl+click for point selection (for TurntablePlus navigation style)
   if (io.KeyCtrl && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-    if (getNavigateStyle() == NavigateStyle::PointSelection) {
+    if (getNavigateStyle() == NavigateStyle::TurntablePlus) {
       ImVec2 mousePos = ImGui::GetMousePos();
       glm::vec2 screenCoords(mousePos.x, mousePos.y);
 
@@ -825,9 +825,9 @@ void buildViewGui() {
     std::string viewStyleName = to_string(view::style);
 
     ImGui::PushItemWidth(120);
-    std::array<NavigateStyle, 6> styles{NavigateStyle::Turntable,   NavigateStyle::Free,
-                                        NavigateStyle::Planar,      NavigateStyle::None,
-                                        NavigateStyle::FirstPerson, NavigateStyle::PointSelection};
+    std::array<NavigateStyle, 6> styles{NavigateStyle::TurntablePlus, NavigateStyle::Turntable,
+                                        NavigateStyle::Free,          NavigateStyle::Planar,
+                                        NavigateStyle::None,          NavigateStyle::FirstPerson};
     if (ImGui::BeginCombo("##View Style", viewStyleName.c_str())) {
 
       for (NavigateStyle s : styles) {
@@ -842,24 +842,6 @@ void buildViewGui() {
     ImGui::SameLine();
 
     ImGui::Text("Camera Style");
-
-    // Show rotation point controls for PointSelection navigation style
-    if (view::style == NavigateStyle::PointSelection) {
-      ImGui::Text("Rotation Point:");
-      ImGui::PushItemWidth(200);
-      bool changed = false;
-      glm::vec3 rotPoint = selectedRotationPoint;
-      changed |= ImGui::InputFloat3("##rotationPoint", &rotPoint[0]);
-      if (changed) {
-        setSelectedRotationPoint(rotPoint);
-      }
-      ImGui::PopItemWidth();
-      ImGui::SameLine();
-      if (ImGui::Button("Reset to Origin")) {
-        setSelectedRotationPoint(glm::vec3(0.0f, 0.0f, 0.0f));
-      }
-      ImGui::Text("Tip: Ctrl+click on a point cloud point to set rotation center");
-    }
 
 
     { // == Up direction
@@ -1186,8 +1168,8 @@ void setNavigateStyle(NavigateStyle newStyle, bool animateFlight) {
   NavigateStyle oldStyle = style;
   style = newStyle;
 
-  // Reset rotation point when leaving PointSelection mode
-  if (oldStyle == NavigateStyle::PointSelection && newStyle != NavigateStyle::PointSelection) {
+  // Reset rotation point when leaving TurntablePlus mode
+  if (oldStyle == NavigateStyle::TurntablePlus && newStyle != NavigateStyle::TurntablePlus) {
     selectedRotationPoint = glm::vec3(0.0f, 0.0f, 0.0f);
   }
 
@@ -1195,7 +1177,7 @@ void setNavigateStyle(NavigateStyle newStyle, bool animateFlight) {
   updateRotationPointMarker();
 
   // for a few combinations of views, we can leave the camera where it is rather than resetting to the home view
-  if (newStyle == NavigateStyle::Free || newStyle == NavigateStyle::PointSelection ||
+  if (newStyle == NavigateStyle::Free || newStyle == NavigateStyle::TurntablePlus ||
       (newStyle == NavigateStyle::FirstPerson && oldStyle == NavigateStyle::Turntable)) {
     return;
   }

@@ -623,6 +623,9 @@ void buildPolyscopeGui() {
 			ImGui::TextUnformatted("        Zoom: [scroll] OR [ctrl] + [shift] + [left click drag]");
 			ImGui::TextUnformatted("   Use [ctrl-c] and [ctrl-v] to save and restore camera poses");
 			ImGui::TextUnformatted("     via the clipboard.");
+    if(view::style == NavigateStyle::TurntablePlus){
+      ImGui::TextUnformatted("   Use [ctrl+left click] to select rotation center.");
+    }
 		ImGui::TextUnformatted("\nMenu Navigation:");
 			ImGui::TextUnformatted("   Menu headers with a '>' can be clicked to collapse and expand.");
 			ImGui::TextUnformatted("   Use [ctrl] + [left click] to manually enter any numeric value");
@@ -632,6 +635,7 @@ void buildPolyscopeGui() {
 			ImGui::TextUnformatted("   Select elements of a structure with [left click]. Data from");
 			ImGui::TextUnformatted("     that element will be shown on the right. Use [right click]");
 			ImGui::TextUnformatted("     to clear the selection.");
+   
 		ImGui::End();
     // clang-format on
   }
