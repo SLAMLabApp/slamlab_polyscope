@@ -135,9 +135,12 @@ NavigateStyle getNavigateStyle();
 void setWindowResizable(bool isResizable);
 bool getWindowResizable();
 
-// Set/get the selected rotation point for PointSelection navigation style
+// Set/get the selected rotation point for TurntablePlus navigation style
 void setSelectedRotationPoint(glm::vec3 point);
 glm::vec3 getSelectedRotationPoint();
+
+// Check if the selection panel should be shown (respects Turntable+ settings)
+bool shouldShowSelectionPanel();
 
 // == Utility functions related to the view
 

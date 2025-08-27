@@ -778,15 +778,18 @@ void buildStructureGui() {
 }
 
 void buildPickGui() {
-  if (haveSelection()) {
+  if (haveSelection() && view::shouldShowSelectionPanel()) {
 
-    ImGui::SetNextWindowPos(ImVec2(view::windowWidth - (rightWindowsWidth + imguiStackMargin),
-                                   2 * imguiStackMargin + lastWindowHeightUser));
-    ImGui::SetNextWindowSize(ImVec2(rightWindowsWidth, 0.));
+    // First, create the window with auto-sizing to calculate its actual height
+    float selectionPanelWidth = 500.0f;                               // Fixed width for the selection panel
+    float centerX = (view::windowWidth - selectionPanelWidth) / 2.0f; // Center horizontally
+
+    // Start with a temporary position - we'll adjust it after we know the height
+    ImGui::SetNextWindowPos(ImVec2(centerX, view::windowHeight - 300.0f)); // Temp position
+    ImGui::SetNextWindowSize(ImVec2(selectionPanelWidth, 0.));             // Height auto-adjusts
 
     ImGui::Begin("Selection", nullptr);
     PickResult selection = getSelection();
-
 
     ImGui::Text("screen coordinates: (%.2f,%.2f)  depth: %g", selection.screenCoords.x, selection.screenCoords.y,
                 selection.depth);
@@ -804,7 +807,14 @@ void buildPickGui() {
       ImGui::TextUnformatted("ERROR: INVALID STRUCTURE");
     }
 
-    rightWindowsWidth = ImGui::GetWindowWidth();
+    // Get the actual calculated window height and reposition it properly at the bottom
+    // Make sure we're at the end of the window content before getting height
+    ImGui::Dummy(ImVec2(0.0f, 0.0f)); // Ensure layout is finalized
+    float actualWindowHeight = ImGui::GetWindowHeight();
+    // Position so the bottom of the window is 2*imguiStackMargin from the screen bottom
+    float properY = view::windowHeight - actualWindowHeight - (2.0f * imguiStackMargin);
+    ImGui::SetWindowPos(ImVec2(centerX, properY));
+
     ImGui::End();
   }
 }

@@ -44,6 +44,9 @@ float& flightTargetFov = state::globalContext.flightTargetFov;
 float& flightInitialFov = state::globalContext.flightInitialFov;
 glm::vec3& selectedRotationPoint = state::globalContext.selectedRotationPoint;
 
+// Static variable to control selection panel visibility for Turntable+
+static bool showSelectionPanelForTurntablePlus = false;
+
 // Default values
 const int defaultWindowWidth = 1280;
 const int defaultWindowHeight = 720;
@@ -963,6 +966,11 @@ void buildViewGui() {
       }
     }
 
+    // Turntable+ specific options
+    if (getNavigateStyle() == NavigateStyle::TurntablePlus) {
+      ImGui::Checkbox("Show selection panel", &showSelectionPanelForTurntablePlus);
+    }
+
     // Move speed
     float moveScaleF = view::moveScale;
     ImGui::SliderFloat(" Move Speed", &moveScaleF, 0.0, 2.0, "%.5f",
@@ -1204,6 +1212,15 @@ void setSelectedRotationPoint(glm::vec3 point) {
   selectedRotationPoint = point;
   updateRotationPointMarker();
   requestRedraw();
+}
+
+bool shouldShowSelectionPanel() {
+  // For Turntable+, only show if the checkbox is enabled
+  if (getNavigateStyle() == NavigateStyle::TurntablePlus) {
+    return showSelectionPanelForTurntablePlus;
+  }
+  // For other navigation styles, always show the selection panel
+  return true;
 }
 
 
