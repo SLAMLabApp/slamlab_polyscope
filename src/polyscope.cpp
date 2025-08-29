@@ -746,8 +746,8 @@ void buildStructureGui() {
 
       int32_t skipCount = 0;
       for (auto& x : structureMap) {
-        ImGui::SetNextItemOpen(structureMap.size() <= 8,
-                               ImGuiCond_FirstUseEver); // closed by default if more than 8
+        ImGui::SetNextItemOpen(false,
+                               ImGuiCond_FirstUseEver); // closed by default
 
         if (structuresToSkip.find(x.second.get()) != structuresToSkip.end()) {
           skipCount++;
