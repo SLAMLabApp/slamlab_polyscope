@@ -777,18 +777,40 @@ void buildStructureGui() {
   ImGui::End();
 }
 
+// Static variables for draggable selection panel
+static bool selectionPanelUserPositioned = false;
+static ImVec2 selectionPanelUserPos = ImVec2(0, 0);
+
 void buildPickGui() {
   if (haveSelection() && view::shouldShowSelectionPanel()) {
 
-    // First, create the window with auto-sizing to calculate its actual height
-    float selectionPanelWidth = 500.0f;                               // Fixed width for the selection panel
-    float centerX = (view::windowWidth - selectionPanelWidth) / 2.0f; // Center horizontally
+    // Window configuration
+    float selectionPanelWidth = 500.0f; // Fixed width for the selection panel
 
-    // Start with a temporary position - we'll adjust it after we know the height
-    ImGui::SetNextWindowPos(ImVec2(centerX, view::windowHeight - 300.0f)); // Temp position
-    ImGui::SetNextWindowSize(ImVec2(selectionPanelWidth, 0.));             // Height auto-adjusts
+    // Set window size (width fixed, height auto-adjusts)
+    ImGui::SetNextWindowSize(ImVec2(selectionPanelWidth, 0.));
 
-    ImGui::Begin("Selection", nullptr);
+    // Only set position if user hasn't manually positioned the window
+    if (!selectionPanelUserPositioned) {
+      float centerX = (view::windowWidth - selectionPanelWidth) / 2.0f;      // Center horizontally
+      ImGui::SetNextWindowPos(ImVec2(centerX, view::windowHeight - 300.0f)); // Default position
+    }
+
+    // Create draggable window
+    ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoResize; // Allow dragging but not resizing
+    ImGui::Begin("Selection", nullptr, windowFlags);
+
+    // Check if the window was moved by the user
+    if (ImGui::IsWindowFocused() && ImGui::IsMouseDragging(ImGuiMouseButton_Left, 0.0f)) {
+      ImVec2 newPos = ImGui::GetWindowPos();
+      // Only mark as user-positioned if the position actually changed
+      if (!selectionPanelUserPositioned || abs(newPos.x - selectionPanelUserPos.x) > 1.0f ||
+          abs(newPos.y - selectionPanelUserPos.y) > 1.0f) {
+        selectionPanelUserPositioned = true;
+        selectionPanelUserPos = newPos;
+      }
+    }
+
     PickResult selection = getSelection();
 
     ImGui::Text("screen coordinates: (%.2f,%.2f)  depth: %g", selection.screenCoords.x, selection.screenCoords.y,
@@ -807,13 +829,16 @@ void buildPickGui() {
       ImGui::TextUnformatted("ERROR: INVALID STRUCTURE");
     }
 
-    // Get the actual calculated window height and reposition it properly at the bottom
-    // Make sure we're at the end of the window content before getting height
-    ImGui::Dummy(ImVec2(0.0f, 0.0f)); // Ensure layout is finalized
-    float actualWindowHeight = ImGui::GetWindowHeight();
-    // Position so the bottom of the window is 2*imguiStackMargin from the screen bottom
-    float properY = view::windowHeight - actualWindowHeight - (2.0f * imguiStackMargin);
-    ImGui::SetWindowPos(ImVec2(centerX, properY));
+    // Only auto-position the window if the user hasn't manually positioned it
+    if (!selectionPanelUserPositioned) {
+      // Get the actual calculated window height and reposition it properly at the bottom
+      ImGui::Dummy(ImVec2(0.0f, 0.0f)); // Ensure layout is finalized
+      float actualWindowHeight = ImGui::GetWindowHeight();
+      float centerX = (view::windowWidth - selectionPanelWidth) / 2.0f;
+      // Position so the bottom of the window is 2*imguiStackMargin from the screen bottom
+      float properY = view::windowHeight - actualWindowHeight - (2.0f * imguiStackMargin);
+      ImGui::SetWindowPos(ImVec2(centerX, properY));
+    }
 
     ImGui::End();
   }
