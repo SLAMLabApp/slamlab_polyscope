@@ -623,7 +623,7 @@ void buildPolyscopeGui() {
 			ImGui::TextUnformatted("        Zoom: [scroll] OR [ctrl] + [shift] + [left click drag]");
 			ImGui::TextUnformatted("   Use [ctrl-c] and [ctrl-v] to save and restore camera poses");
 			ImGui::TextUnformatted("     via the clipboard.");
-    if(view::style == NavigateStyle::TurntablePlus){
+    if(view::style == NavigateStyle::Turntable){
       ImGui::TextUnformatted("   Use [ctrl+left click] to select rotation center.");
     }
 		ImGui::TextUnformatted("\nMenu Navigation:");

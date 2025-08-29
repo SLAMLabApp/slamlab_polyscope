@@ -44,8 +44,8 @@ float& flightTargetFov = state::globalContext.flightTargetFov;
 float& flightInitialFov = state::globalContext.flightInitialFov;
 glm::vec3& selectedRotationPoint = state::globalContext.selectedRotationPoint;
 
-// Static variable to control selection panel visibility for Turntable+
-static bool showSelectionPanelForTurntablePlus = false;
+// Static variable to control selection panel visibility for Turntable
+static bool showSelectionPanelForTurntable = false;
 
 // Default values
 const int defaultWindowWidth = 1280;
@@ -70,9 +70,6 @@ std::string to_string(ProjectionMode mode) {
 std::string to_string(NavigateStyle style) {
 
   switch (style) {
-  case NavigateStyle::Turntable:
-    return "Turntable";
-    break;
   case NavigateStyle::Free:
     return "Free";
     break;
@@ -88,8 +85,8 @@ std::string to_string(NavigateStyle style) {
   case NavigateStyle::FirstPerson:
     return "First Person";
     break;
-  case NavigateStyle::TurntablePlus:
-    return "Turntable+";
+  case NavigateStyle::Turntable:
+    return "Turntable";
     break;
   }
 
@@ -128,8 +125,8 @@ glm::vec2 bufferIndsToScreenCoords(glm::ivec2 bufferInds) {
 void updateRotationPointMarker() {
   const std::string markerName = "ROTATION_POINT_MARKER";
 
-  if (getNavigateStyle() != NavigateStyle::TurntablePlus) {
-    // Hide marker if not in TurntablePlus mode
+  if (getNavigateStyle() != NavigateStyle::Turntable) {
+    // Hide marker if not in Turntable mode
     if (hasPointCloud(markerName)) {
       getPointCloud(markerName)->setEnabled(false);
     }
@@ -147,7 +144,7 @@ void updateRotationPointMarker() {
 
     // Configure the marker appearance
     getPointCloud(markerName)->setPointRenderMode(PointRenderMode::Sphere);
-    getPointCloud(markerName)->setPointRadius(0.05f);                      // Make it large and visible
+    getPointCloud(markerName)->setPointRadius(0.025f);                     // Make it large and visible
     getPointCloud(markerName)->setPointColor(glm::vec3(0.0f, 0.8f, 0.8f)); // Turquoise color
   } else {
     // Update existing marker position
@@ -169,28 +166,6 @@ void processRotate(glm::vec2 startP, glm::vec2 endP) {
   getCameraFrame(frameLookDir, frameUpDir, frameRightDir);
 
   switch (getNavigateStyle()) {
-  case NavigateStyle::Turntable: {
-
-    glm::vec2 dragDelta = endP - startP;
-    float delTheta = 2.0 * dragDelta.x * moveScale;
-    float delPhi = 2.0 * dragDelta.y * moveScale;
-
-    // Translate to center
-    viewMat = glm::translate(viewMat, state::center());
-
-    // Rotation about the horizontal axis
-    glm::mat4x4 phiCamR = glm::rotate(glm::mat4x4(1.0), -delPhi, frameRightDir);
-    viewMat = viewMat * phiCamR;
-
-    // Rotation about the vertical axis
-    glm::vec3 turntableUp;
-    glm::mat4x4 thetaCamR = glm::rotate(glm::mat4x4(1.0), delTheta, getUpVec());
-    viewMat = viewMat * thetaCamR;
-
-    // Undo centering
-    viewMat = glm::translate(viewMat, -state::center());
-    break;
-  }
   case NavigateStyle::Free: {
     glm::vec2 dragDelta = endP - startP;
     float delTheta = 2.0 * dragDelta.x * moveScale;
@@ -269,7 +244,7 @@ void processRotate(glm::vec2 startP, glm::vec2 endP) {
 
     break;
   }
-  case NavigateStyle::TurntablePlus: {
+  case NavigateStyle::Turntable: {
     glm::vec2 dragDelta = endP - startP;
     float delTheta = 2.0 * dragDelta.x * moveScale;
     float delPhi = 2.0 * dragDelta.y * moveScale;
@@ -353,9 +328,9 @@ void processKeyboardNavigation(ImGuiIO& io) {
 
   // == Non movement-related
 
-  // ctrl+click for point selection (for TurntablePlus navigation style)
+  // ctrl+click for point selection (for Turntable navigation style)
   if (io.KeyCtrl && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-    if (getNavigateStyle() == NavigateStyle::TurntablePlus) {
+    if (getNavigateStyle() == NavigateStyle::Turntable) {
       ImVec2 mousePos = ImGui::GetMousePos();
       glm::vec2 screenCoords(mousePos.x, mousePos.y);
 
@@ -828,9 +803,8 @@ void buildViewGui() {
     std::string viewStyleName = to_string(view::style);
 
     ImGui::PushItemWidth(120);
-    std::array<NavigateStyle, 6> styles{NavigateStyle::TurntablePlus, NavigateStyle::Turntable,
-                                        NavigateStyle::Free,          NavigateStyle::Planar,
-                                        NavigateStyle::None,          NavigateStyle::FirstPerson};
+    std::array<NavigateStyle, 5> styles{NavigateStyle::Turntable, NavigateStyle::Free, NavigateStyle::Planar,
+                                        NavigateStyle::None, NavigateStyle::FirstPerson};
     if (ImGui::BeginCombo("##View Style", viewStyleName.c_str())) {
 
       for (NavigateStyle s : styles) {
@@ -966,9 +940,9 @@ void buildViewGui() {
       }
     }
 
-    // Turntable+ specific options
-    if (getNavigateStyle() == NavigateStyle::TurntablePlus) {
-      ImGui::Checkbox("Show selection panel", &showSelectionPanelForTurntablePlus);
+    // Turntable specific options
+    if (getNavigateStyle() == NavigateStyle::Turntable) {
+      ImGui::Checkbox("Show selection panel", &showSelectionPanelForTurntable);
     }
 
     // Move speed
@@ -1176,8 +1150,8 @@ void setNavigateStyle(NavigateStyle newStyle, bool animateFlight) {
   NavigateStyle oldStyle = style;
   style = newStyle;
 
-  // Reset rotation point when leaving TurntablePlus mode
-  if (oldStyle == NavigateStyle::TurntablePlus && newStyle != NavigateStyle::TurntablePlus) {
+  // Reset rotation point when leaving Turntable mode
+  if (oldStyle == NavigateStyle::Turntable && newStyle != NavigateStyle::Turntable) {
     selectedRotationPoint = glm::vec3(0.0f, 0.0f, 0.0f);
   }
 
@@ -1185,7 +1159,7 @@ void setNavigateStyle(NavigateStyle newStyle, bool animateFlight) {
   updateRotationPointMarker();
 
   // for a few combinations of views, we can leave the camera where it is rather than resetting to the home view
-  if (newStyle == NavigateStyle::Free || newStyle == NavigateStyle::TurntablePlus ||
+  if (newStyle == NavigateStyle::Free || newStyle == NavigateStyle::Turntable ||
       (newStyle == NavigateStyle::FirstPerson && oldStyle == NavigateStyle::Turntable)) {
     return;
   }
@@ -1215,9 +1189,9 @@ void setSelectedRotationPoint(glm::vec3 point) {
 }
 
 bool shouldShowSelectionPanel() {
-  // For Turntable+, only show if the checkbox is enabled
-  if (getNavigateStyle() == NavigateStyle::TurntablePlus) {
-    return showSelectionPanelForTurntablePlus;
+  // For Turntable, only show if the checkbox is enabled
+  if (getNavigateStyle() == NavigateStyle::Turntable) {
+    return showSelectionPanelForTurntable;
   }
   // For other navigation styles, always show the selection panel
   return true;
