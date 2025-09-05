@@ -128,7 +128,8 @@ void updateRotationPointMarker() {
   if (getNavigateStyle() != NavigateStyle::Turntable) {
     // Hide marker if not in Turntable mode
     if (hasPointCloud(markerName)) {
-      getPointCloud(markerName)->setEnabled(false);
+      removePointCloud(markerName);
+      polyscope::requestRedraw();
     }
     return;
   }
@@ -146,13 +147,13 @@ void updateRotationPointMarker() {
     getPointCloud(markerName)->setPointRenderMode(PointRenderMode::Sphere);
     getPointCloud(markerName)->setPointRadius(0.025f);                     // Make it large and visible
     getPointCloud(markerName)->setPointColor(glm::vec3(0.0f, 0.8f, 0.8f)); // Turquoise color
+    getPointCloud(markerName)->setEnabled(true);
   } else {
     // Update existing marker position
     getPointCloud(markerName)->updatePointPositions(markerPoint);
   }
 
-  // Ensure the marker is visible
-  getPointCloud(markerName)->setEnabled(true);
+
 }
 
 void processRotate(glm::vec2 startP, glm::vec2 endP) {
