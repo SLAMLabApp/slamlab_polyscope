@@ -123,7 +123,7 @@ glm::vec2 bufferIndsToScreenCoords(glm::ivec2 bufferInds) {
 
 // Function to update rotation point marker
 void updateRotationPointMarker() {
-  const std::string markerName = "Rotation point marker";
+  const std::string markerName = "_Camera rotation point";
 
   if (getNavigateStyle() != NavigateStyle::Turntable) {
     // Hide marker if not in Turntable mode
