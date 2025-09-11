@@ -123,7 +123,7 @@ glm::vec2 bufferIndsToScreenCoords(glm::ivec2 bufferInds) {
 
 // Function to update rotation point marker
 void updateRotationPointMarker() {
-  const std::string markerName = "ROTATION_POINT_MARKER";
+  const std::string markerName = "Rotation point marker";
 
   if (getNavigateStyle() != NavigateStyle::Turntable) {
     // Hide marker if not in Turntable mode
@@ -152,8 +152,6 @@ void updateRotationPointMarker() {
     // Update existing marker position
     getPointCloud(markerName)->updatePointPositions(markerPoint);
   }
-
-
 }
 
 void processRotate(glm::vec2 startP, glm::vec2 endP) {
