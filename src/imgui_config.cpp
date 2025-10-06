@@ -1,6 +1,7 @@
 // Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
 
 #include "polyscope/imgui_config.h"
+#include <polyscope/polyscope.h>
 
 namespace polyscope {
 
@@ -15,13 +16,16 @@ const unsigned int* getLatoRegularCompressedData();
 
 void configureImGuiStyle() {
 
-  // Style
   ImGuiStyle* style = &ImGui::GetStyle();
+  *style = ImGuiStyle(); // apply the default style as a starting point
+
+  // Style
   style->WindowRounding = 1;
   style->FrameRounding = 1;
   style->FramePadding.y = 4;
   style->ScrollbarRounding = 1;
   style->ScrollbarSize = 20;
+  style->ScaleAllSizes(options::uiScale);
 
 
   // Colors
@@ -76,29 +80,41 @@ std::tuple<ImFontAtlas*, ImFont*, ImFont*> prepareImGuiFonts() {
 
   ImGuiIO& io = ImGui::GetIO();
 
+  ImVec2 windowSize{static_cast<float>(view::windowWidth), static_cast<float>(view::windowHeight)};
+  ImVec2 bufferSize{static_cast<float>(view::bufferWidth), static_cast<float>(view::bufferHeight)};
+  ImVec2 imguiCoordScale = {bufferSize.x / windowSize.x, bufferSize.y / windowSize.y};
+
   // outputs
-  ImFontAtlas* globalFontAtlas;
+  ImFontAtlas* fontAtlas = nullptr; // right now this is unused by the caller, but I don't want to change
+                                    // this callback signature until I'm more confident about how this
+                                    // should work. (And it might be changing in an upcoming imgui version)
   ImFont* regularFont;
   ImFont* monoFont;
 
+  float fontSize = 16.0 * options::uiScale;
+  fontSize = std::max(1.0f, std::roundf(fontSize));
+
   { // add regular font
     ImFontConfig config;
+    config.RasterizerDensity = std::max(imguiCoordScale.x, imguiCoordScale.y);
     regularFont = io.Fonts->AddFontFromMemoryCompressedTTF(render::getLatoRegularCompressedData(),
-                                                           render::getLatoRegularCompressedSize(), 18.0f, &config);
+                                                           render::getLatoRegularCompressedSize(),
+                                                           options::uiScale * 18.0f, &config);
   }
 
   { // add mono font
     ImFontConfig config;
+    config.RasterizerDensity = std::max(imguiCoordScale.x, imguiCoordScale.y);
     monoFont = io.Fonts->AddFontFromMemoryCompressedTTF(render::getCousineRegularCompressedData(),
-                                                        render::getCousineRegularCompressedSize(), 16.0f, &config);
+                                                        render::getCousineRegularCompressedSize(),
+                                                        options::uiScale * 16.0f, &config);
   }
 
   // io.Fonts->AddFontFromFileTTF("test-font-name.ttf", 16);
 
   io.Fonts->Build();
-  globalFontAtlas = io.Fonts;
 
-  return std::tuple<ImFontAtlas*, ImFont*, ImFont*>{globalFontAtlas, regularFont, monoFont};
+  return std::tuple<ImFontAtlas*, ImFont*, ImFont*>{fontAtlas, regularFont, monoFont};
 }
 
 } // namespace polyscope

@@ -66,7 +66,11 @@ void GroundPlane::populateGroundPlaneGeometry() {
 }
 
 void GroundPlane::prepare() {
+
   if (options::groundPlaneMode == GroundPlaneMode::None) {
+    // quick-out for the none case
+    groundPlanePrepared = true;
+    groundPlanePreparedMode = options::groundPlaneMode;
     return;
   }
 
@@ -163,6 +167,7 @@ void GroundPlane::prepare() {
   }
 
   groundPlanePrepared = true;
+  groundPlanePreparedMode = options::groundPlaneMode;
 }
 
 void GroundPlane::draw(bool isRedraw) {
@@ -173,7 +178,13 @@ void GroundPlane::draw(bool isRedraw) {
   // don't draw ground in planar mode
   if (view::style == view::NavigateStyle::Planar) return;
 
-  if (!groundPlanePrepared) {
+  // don't draw the ground in Simple transparency mode
+  // (there's not really any way to do so that doesn't look weird at the horizon boundary)
+  if (render::engine->getTransparencyMode() == TransparencyMode::Simple) {
+    return;
+  }
+
+  if (!groundPlanePrepared || groundPlanePreparedMode != options::groundPlaneMode) {
     prepare();
   }
   if (view::upDir != groundPlaneViewCached) {
@@ -277,7 +288,7 @@ void GroundPlane::draw(bool isRedraw) {
     render::engine->setDepthMode(DepthMode::Less);
     sceneAltFrameBuffer->resize(factor * view::bufferWidth / 2, factor * view::bufferHeight / 2);
     sceneAltFrameBuffer->setViewport(0, 0, factor * view::bufferWidth / 2, factor * view::bufferHeight / 2);
-    render::engine->setCurrentPixelScaling(factor / 2.);
+    render::engine->setCurrentPixelScaling(factor / 2. * options::uiScale);
 
     sceneAltFrameBuffer->bindForRendering();
     sceneAltFrameBuffer->clearColor = {view::bgColor[0], view::bgColor[1], view::bgColor[2]};
@@ -377,7 +388,6 @@ void GroundPlane::draw(bool isRedraw) {
 
   // Render the ground plane
   render::engine->applyTransparencySettings();
-  render::engine->setDepthMode(DepthMode::Less);
   setUniforms();
   groundPlaneProgram->draw();
 }
@@ -411,7 +421,7 @@ void GroundPlane::buildGui() {
   ImGui::SetNextItemOpen(false, ImGuiCond_FirstUseEver);
   if (ImGui::TreeNode("Ground Plane")) {
 
-    ImGui::PushItemWidth(160);
+    ImGui::PushItemWidth(160 * options::uiScale);
     if (ImGui::BeginCombo("Mode", modeName(options::groundPlaneMode).c_str())) {
       for (GroundPlaneMode m : {GroundPlaneMode::None, GroundPlaneMode::Tile, GroundPlaneMode::TileReflection,
                                 GroundPlaneMode::ShadowOnly}) {
@@ -426,7 +436,7 @@ void GroundPlane::buildGui() {
     ImGui::PopItemWidth();
 
     // Height
-    ImGui::PushItemWidth(80);
+    ImGui::PushItemWidth(80 * options::uiScale);
     switch (options::groundPlaneHeightMode) {
     case GroundPlaneHeightMode::Automatic:
       if (ImGui::SliderFloat("##HeightValue", options::groundPlaneHeightFactor.getValuePtr(), -1.0, 1.0))
@@ -446,7 +456,7 @@ void GroundPlane::buildGui() {
     }
     ImGui::PopItemWidth();
     ImGui::SameLine();
-    ImGui::PushItemWidth(100);
+    ImGui::PushItemWidth(100 * options::uiScale);
     if (ImGui::BeginCombo("Height##Mode", heightModeName(options::groundPlaneHeightMode).c_str())) {
       for (GroundPlaneHeightMode m : {GroundPlaneHeightMode::Automatic, GroundPlaneHeightMode::Manual}) {
         std::string mName = heightModeName(m);

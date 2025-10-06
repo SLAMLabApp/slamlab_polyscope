@@ -76,17 +76,24 @@ void constructDemoCurveNetwork(std::string curveName, std::vector<glm::vec3> nod
     std::vector<double> valEdgeCat(nEdges);
     std::vector<std::array<double, 3>> randColor(nEdges);
     std::vector<glm::vec3> randVec(nEdges);
+    std::vector<double> valYabs(nEdges);
     for (size_t iE = 0; iE < nEdges; iE++) {
       auto edge = edges[iE];
       size_t nA = std::get<0>(edge);
       size_t nB = std::get<1>(edge);
+      glm::vec3 posA = nodes[nA];
+      glm::vec3 posB = nodes[nB];
+      glm::vec3 midpointPos = 0.5f * (posA + posB);
 
       edgeLen[iE] = glm::length(nodes[nA] - nodes[nB]);
       valEdgeCat[iE] = iE * 5 / nEdges;
       randColor[iE] = {{polyscope::randomUnit(), polyscope::randomUnit(), polyscope::randomUnit()}};
       randVec[iE] = glm::vec3{polyscope::randomUnit() - .5, polyscope::randomUnit() - .5, polyscope::randomUnit() - .5};
+      valYabs[iE] = std::fabs(midpointPos.y);
     }
     polyscope::getCurveNetwork(curveName)->addEdgeScalarQuantity("edge len", edgeLen, polyscope::DataType::MAGNITUDE);
+    polyscope::getCurveNetwork(curveName)->addEdgeScalarQuantity("edge valYabs", valYabs,
+                                                                 polyscope::DataType::MAGNITUDE);
     polyscope::getCurveNetwork(curveName)->addEdgeScalarQuantity("edge categorical", valEdgeCat,
                                                                  polyscope::DataType::CATEGORICAL);
     polyscope::getCurveNetwork(curveName)->addEdgeColorQuantity("eColor", randColor);
@@ -95,6 +102,7 @@ void constructDemoCurveNetwork(std::string curveName, std::vector<glm::vec3> nod
 
   // set a node radius quantity from above
   polyscope::getCurveNetwork(curveName)->setNodeRadiusQuantity("nXabs");
+  polyscope::getCurveNetwork(curveName)->setEdgeRadiusQuantity("edge valYabs");
 }
 
 void processFileOBJ(std::string filename) {
@@ -780,7 +788,7 @@ void callback() {
   static int loadedMat = 1;
   static bool depthClick = false;
 
-  ImGui::PushItemWidth(100);
+  ImGui::PushItemWidth(100 * polyscope::options::uiScale);
 
   ImGui::InputInt("num points", &numPoints);
   ImGui::InputFloat("param value", &param);
@@ -813,6 +821,7 @@ void callback() {
       std::cout << "    io.MousePos.x: " << io.MousePos.x << " io.MousePos.y: " << io.MousePos.y << std::endl;
       std::cout << "    screenCoords.x: " << screenCoords.x << " screenCoords.y: " << screenCoords.y << std::endl;
       std::cout << "    bufferInd.x: " << xInd << " bufferInd.y: " << yInd << std::endl;
+      std::cout << "    depth: " << pickResult.depth << std::endl;
       std::cout << "    worldRay: ";
       polyscope::operator<<(std::cout, worldRay) << std::endl;
       std::cout << "    worldPos: ";
@@ -838,6 +847,9 @@ void callback() {
     }
   }
 
+  if (ImGui::Button("nested show")) {
+    polyscope::show();
+  }
 
   if (ImGui::Button("drop camera view here")) {
     dropCameraView();
@@ -851,8 +863,27 @@ void callback() {
     addVolumeGrid();
   }
 
+  // ImPlot
+  // dummy data
+  if (ImGui::TreeNode("ImPlot")) {
+
+    std::vector<float> plotVals;
+    for (float t = 0; t < 10.; t += 0.01) {
+      plotVals.push_back(std::cosf(t + ImGui::GetTime()));
+    }
+
+    // sample plot
+    if (ImPlot::BeginPlot("test plot")) {
+      ImPlot::PlotLine("sample_val", &plotVals.front(), plotVals.size());
+      ImPlot::EndPlot();
+    }
+
+    ImGui::TreePop();
+  }
+
   ImGui::PopItemWidth();
 }
+
 
 int main(int argc, char** argv) {
   // Configure the argument parser
@@ -879,7 +910,7 @@ int main(int argc, char** argv) {
   // polyscope::view::windowWidth = 600;
   // polyscope::view::windowHeight = 800;
   // polyscope::options::maxFPS = -1;
-  polyscope::options::verbosity = 100;
+  polyscope::options::verbosity = 101;
   polyscope::options::enableRenderErrorChecks = true;
   polyscope::options::allowHeadlessBackends = true;
 
@@ -914,11 +945,12 @@ int main(int argc, char** argv) {
   } else {
     // Show the gui
     polyscope::show();
+
+    // main loop using manual frameTick() instead
+    // while (!polyscope::windowRequestsClose()) {
+    //   polyscope::frameTick();
+    // }
   }
-  // main loop using manual frameTick() instead
-  // while (true) {
-  //   polyscope::frameTick();
-  // }
 
   std::cout << "!!!! shutdown time" << std::endl;
   polyscope::shutdown();

@@ -130,6 +130,26 @@ void PointCloud::drawPick() {
   setPointCloudUniforms(*pickProgram);
 
   pickProgram->draw();
+
+  for (auto& x : quantities) {
+    x.second->drawPick();
+  }
+  for (auto& x : floatingQuantities) {
+    x.second->drawPick();
+  }
+}
+
+void PointCloud::drawPickDelayed() {
+  if (!isEnabled()) {
+    return;
+  }
+
+  for (auto& x : quantities) {
+    x.second->drawPickDelayed();
+  }
+  for (auto& x : floatingQuantities) {
+    x.second->drawPickDelayed();
+  }
 }
 
 void PointCloud::ensureRenderProgramPrepared() {
@@ -288,7 +308,7 @@ void PointCloud::buildCustomUI() {
     setPointColor(getPointColor());
   }
   ImGui::SameLine();
-  ImGui::PushItemWidth(70);
+  ImGui::PushItemWidth(70 * options::uiScale);
   if (ImGui::SliderFloat("Radius", pointRadius.get().getValuePtr(), 0.0, .1, "%.5f",
                          ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat)) {
     pointRadius.manuallyChanged();

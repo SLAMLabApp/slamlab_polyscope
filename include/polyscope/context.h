@@ -88,16 +88,16 @@ struct Context {
   double nearClipRatio = view::defaultNearClipRatio;
   double farClipRatio = view::defaultFarClipRatio;
   std::array<float, 4> bgColor{{1.0, 1.0, 1.0, 0.0}};
-  glm::mat4x4 viewMat;
+  glm::mat4x4 viewMat{std::numeric_limits<float>::quiet_NaN()};
   double fov = view::defaultFov;
   ProjectionMode projectionMode = ProjectionMode::Perspective;
+  glm::vec3 viewCenter;
   bool midflight = false;
   float flightStartTime = -1;
   float flightEndTime = -1;
   glm::dualquat flightTargetViewR, flightInitialViewR;
   glm::vec3 flightTargetViewT, flightInitialViewT;
   float flightTargetFov, flightInitialFov;
-  glm::vec3 selectedRotationPoint = glm::vec3(0.0f, 0.0f, 0.0f);
 
   // ======================================================
   // === Picking globals from pick.h / pick.cpp
@@ -107,6 +107,7 @@ struct Context {
   bool haveSelectionVal = false;
   uint64_t nextPickBufferInd = 1;
   std::unordered_map<Structure*, std::tuple<uint64_t, uint64_t>> structureRanges;
+  std::unordered_map<Quantity*, std::tuple<uint64_t, uint64_t>> quantityRanges;
 
   // ======================================================
   // === Internal globals from internal.h

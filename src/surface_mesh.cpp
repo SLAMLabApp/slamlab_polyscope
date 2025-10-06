@@ -810,7 +810,28 @@ void SurfaceMesh::drawPick() {
 
   pickProgram->draw();
 
+  for (auto& x : quantities) {
+    x.second->drawPick();
+  }
+
   render::engine->setBackfaceCull(); // return to default setting
+
+  for (auto& x : floatingQuantities) {
+    x.second->drawPick();
+  }
+}
+
+void SurfaceMesh::drawPickDelayed() {
+  if (!isEnabled()) {
+    return;
+  }
+
+  for (auto& x : quantities) {
+    x.second->drawPickDelayed();
+  }
+  for (auto& x : floatingQuantities) {
+    x.second->drawPickDelayed();
+  }
 }
 
 void SurfaceMesh::prepare() {
@@ -1304,7 +1325,7 @@ void SurfaceMesh::buildCustomUI() {
 
   { // Flat shading or smooth shading?
     ImGui::SameLine();
-    ImGui::PushItemWidth(85);
+    ImGui::PushItemWidth(85 * options::uiScale);
 
     auto styleName = [](const MeshShadeStyle& m) -> std::string {
       switch (m) {
@@ -1333,7 +1354,7 @@ void SurfaceMesh::buildCustomUI() {
 
   { // Edge options
     ImGui::SameLine();
-    ImGui::PushItemWidth(100);
+    ImGui::PushItemWidth(100 * options::uiScale);
     if (edgeWidth.get() == 0.) {
       bool showEdges = false;
       if (ImGui::Checkbox("Edges", &showEdges)) {
@@ -1346,14 +1367,14 @@ void SurfaceMesh::buildCustomUI() {
       }
 
       // Edge color
-      ImGui::PushItemWidth(100);
+      ImGui::PushItemWidth(100 * options::uiScale);
       if (ImGui::ColorEdit3("Edge Color", &edgeColor.get()[0], ImGuiColorEditFlags_NoInputs))
         setEdgeColor(edgeColor.get());
       ImGui::PopItemWidth();
 
       // Edge width
       ImGui::SameLine();
-      ImGui::PushItemWidth(75);
+      ImGui::PushItemWidth(75 * options::uiScale);
       if (ImGui::SliderFloat("Width", &edgeWidth.get(), 0.001, 2.)) {
         // NOTE: this intentionally circumvents the setEdgeWidth() setter to avoid repopulating the buffer as the
         // slider is dragged---otherwise we repopulate the buffer on every change, which mostly works fine. This is a
@@ -1562,26 +1583,40 @@ long long int SurfaceMesh::selectVertex() {
   // Make sure we can see edges
   float oldEdgeWidth = getEdgeWidth();
   setEdgeWidth(1.);
+
+  // Make sure we can see the mesh
   this->setEnabled(true);
 
+  // Allow picking vertices only
+  MeshSelectionMode oldSelectionMode = getSelectionMode();
+  setSelectionMode(MeshSelectionMode::VerticesOnly);
+
   long long int returnVertInd = -1;
+
+  // ImGui internally swaps cmd/ctrl on macOS
+#ifdef __APPLE__
+  std::string selectMessage = "Hold cmd and left-click on the mesh to select a vertex";
+#else
+  std::string selectMessage = "Hold ctrl and left-click on the mesh to select a vertex";
+#endif
 
   // Register the callback which creates the UI and does the hard work
   auto focusedPopupUI = [&]() {
     { // Create a window with instruction and a close button.
       static bool showWindow = true;
-      ImGui::SetNextWindowSize(ImVec2(300, 0), ImGuiCond_Once);
+      ImGui::SetNextWindowSize(ImVec2(400, 0), ImGuiCond_Once);
       ImGui::Begin("Select vertex", &showWindow);
 
-      ImGui::PushItemWidth(300);
-      ImGui::TextUnformatted("Hold ctrl and left-click to select a vertex");
-      ImGui::Separator();
+      ImGui::PushItemWidth(300 * options::uiScale);
+      ImGui::TextUnformatted(selectMessage.c_str());
+      ImGui::NewLine();
 
       // Choose by number
-      ImGui::PushItemWidth(300);
+      ImGui::PushItemWidth(100 * options::uiScale);
+      ImGui::TextUnformatted("Or, select by index");
       static int iV = -1;
-      ImGui::InputInt("index", &iV);
-      if (ImGui::Button("Select by index")) {
+      ImGui::InputInt("vertex index", &iV, 0);
+      if (ImGui::Button("Select")) {
         if (iV >= 0 && (size_t)iV < nVertices()) {
           returnVertInd = iV;
           popContext();
@@ -1589,7 +1624,7 @@ long long int SurfaceMesh::selectVertex() {
       }
       ImGui::PopItemWidth();
 
-      ImGui::Separator();
+      ImGui::NewLine();
       if (ImGui::Button("Abort")) {
         popContext();
       }
@@ -1600,17 +1635,15 @@ long long int SurfaceMesh::selectVertex() {
     ImGuiIO& io = ImGui::GetIO();
     if (io.KeyCtrl && !io.WantCaptureMouse && ImGui::IsMouseClicked(0)) {
 
-      ImGuiIO& io = ImGui::GetIO();
-
-      // API is a giant mess..
-      size_t pickInd;
       ImVec2 p = ImGui::GetMousePos();
-      std::pair<Structure*, size_t> pickVal = pick::pickAtScreenCoords(glm::vec2{p.x, p.y});
+      PickResult pickResult = pickAtScreenCoords(glm::vec2{p.x, p.y});
 
-      if (pickVal.first == this) {
+      if (pickResult.structure == this) {
 
-        if (pickVal.second < nVertices()) {
-          returnVertInd = pickVal.second;
+        SurfaceMeshPickResult surfacePickResult = interpretPickResult(pickResult);
+
+        if (surfacePickResult.elementType == MeshElement::VERTEX) {
+          returnVertInd = surfacePickResult.index;
           popContext();
         }
       }
@@ -1620,7 +1653,9 @@ long long int SurfaceMesh::selectVertex() {
   // Pass control to the context we just created
   pushContext(focusedPopupUI);
 
-  setEdgeWidth(oldEdgeWidth); // restore edge setting
+  // Restore the old settings
+  setEdgeWidth(oldEdgeWidth);
+  setSelectionMode(oldSelectionMode);
 
   return returnVertInd;
 }

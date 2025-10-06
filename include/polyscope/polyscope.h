@@ -9,6 +9,7 @@
 #include <unordered_set>
 
 #include "imgui.h"
+#include "implot.h"
 
 #include "polyscope/context.h"
 #include "polyscope/group.h"
@@ -127,11 +128,7 @@ extern Context globalContext;
 Structure* getStructure(std::string type, std::string name = "");
 
 // True if such a structure exists
-bool hasStructure(std::string type, std::string name = "");
-
-// Look up the string type and name for a structure from its pointer
-// (performs a naive search over all structures for now, use sparingly)
-std::tuple<std::string, std::string> lookUpStructure(Structure* structure);
+bool hasStructure(std::string type, std::string name);
 
 // De-register a structure, of any type. Also removes any quantities associated with the structure
 void removeStructure(Structure* structure, bool errorIfAbsent = false);
@@ -200,6 +197,7 @@ void drawStructuresDelayed();
 // Called to check any options that might have been changed and perform appropriate updates. Users generally should not
 // need to call this directly.
 void processLazyProperties();
+void processLazyPropertiesOutsideOfImGui();
 
 
 } // namespace polyscope

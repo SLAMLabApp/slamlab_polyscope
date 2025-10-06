@@ -128,6 +128,27 @@ void CameraView::drawPick() {
   pickFrameProgram->setUniform("u_vertPickRadius", 0.);
 
   pickFrameProgram->draw();
+
+  for (auto& x : quantities) {
+    x.second->drawPick();
+  }
+  for (auto& x : floatingQuantities) {
+    x.second->drawPick();
+  }
+}
+
+
+void CameraView::drawPickDelayed() {
+  if (!isEnabled()) {
+    return;
+  }
+
+  for (auto& x : quantities) {
+    x.second->drawPickDelayed();
+  }
+  for (auto& x : floatingQuantities) {
+    x.second->drawPickDelayed();
+  }
 }
 
 void CameraView::prepare() {
@@ -386,7 +407,7 @@ void CameraView::buildCustomUI() {
 
 void CameraView::buildCustomOptionsUI() {
 
-  ImGui::PushItemWidth(150);
+  ImGui::PushItemWidth(150 * options::uiScale);
 
   if (widgetFocalLengthUpper == -777) widgetFocalLengthUpper = 2. * (*widgetFocalLength.get().getValuePtr());
   if (ImGui::SliderFloat("widget focal length", widgetFocalLength.get().getValuePtr(), 0, widgetFocalLengthUpper,

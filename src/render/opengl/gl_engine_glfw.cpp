@@ -49,6 +49,15 @@ void GLEngineGLFW::initialize() {
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+  // This tells GLFW to scale window size/positioning/content based on the system-reported DPI scaling factor
+  // However, it can lead to some confusing behaviors, for instance, on linux with scaling=200%, if the user
+  // sets view::windowWidth = 1280, they might get back a window with windowWidth == bufferWidth == 2560,
+  // which is quite confusing.
+  // For this reason we _do not_ set this hint. If desired, the user can specify a windowWidth = 1280*uiScale,
+  // or let the window size by loaded from .polyscope.ini after setting manually once.
+  // glfwWindowHint(GLFW_SCALE_TO_MONITOR, GLFW_TRUE);
+
 #if __APPLE__
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
@@ -100,14 +109,46 @@ void GLEngineGLFW::initialize() {
     // glClearDepth(1.);
   }
 
+  // Set the UI scale to account for system-requested DPI scaling
+  // Currently we do *not* watch for changes of this value e.g. if a window moves between
+  // monitors with different DPI behaviors. We could, but it would require some logic to
+  // avoid overwriting values that a user might have set.
+  if (options::uiScale < 0) { // only set from system if the value is -1, meaning not set yet
+    setUIScaleFromSystemDPI();
+  }
+
   populateDefaultShadersAndRules();
 }
 
+void GLEngineGLFW::setUIScaleFromSystemDPI() {
+
+  // logic adapted from a helpful imgui issue here: https://github.com/ocornut/imgui/issues/6967#issuecomment-2833882081
+
+  ImVec2 windowSize{static_cast<float>(view::windowWidth), static_cast<float>(view::windowHeight)};
+  ImVec2 bufferSize{static_cast<float>(view::bufferWidth), static_cast<float>(view::bufferHeight)};
+  ImVec2 imguiCoordScale = {bufferSize.x / windowSize.x, bufferSize.y / windowSize.y};
+
+  ImVec2 contentScale;
+  glfwGetWindowContentScale(mainWindow, &contentScale.x, &contentScale.y);
+
+  float sx = contentScale.x / imguiCoordScale.x;
+  float sy = contentScale.y / imguiCoordScale.y;
+  options::uiScale = std::max(sx, sy);
+  // clamp to values within [0.5x,4x] scaling
+  options::uiScale = std::fmin(std::fmax(options::uiScale, 0.5f), 4.0f);
+
+  info(100, "window size: " + std::to_string(view::windowWidth) + "," + std::to_string(view::windowHeight));
+  info(100, "buffer size: " + std::to_string(view::bufferWidth) + "," + std::to_string(view::bufferHeight));
+  info(100, "imguiCoordScale: " + std::to_string(imguiCoordScale.x) + "," + std::to_string(imguiCoordScale.y));
+  info(100, "contentScale: " + std::to_string(contentScale.x) + "," + std::to_string(contentScale.y));
+  info(100, "computed uiScale: " + std::to_string(options::uiScale));
+}
 
 void GLEngineGLFW::initializeImGui() {
   bindDisplay();
 
   ImGui::CreateContext(); // must call once at start
+  ImPlot::CreateContext(); 
 
   // Set up ImGUI glfw bindings
   ImGui_ImplGlfw_InitForOpenGL(mainWindow, true);
@@ -115,6 +156,33 @@ void GLEngineGLFW::initializeImGui() {
   ImGui_ImplOpenGL3_Init(glsl_version);
 
   configureImGui();
+}
+
+void GLEngineGLFW::configureImGui() {
+
+  if (options::uiScale < 0) {
+    exception("uiScale is < 0. Perhaps it wasn't initialized?");
+  }
+
+  if (options::prepareImGuiFontsCallback) {
+
+    ImGuiIO& io = ImGui::GetIO();
+    io.Fonts->Clear();
+
+    // these are necessary if different fonts are loaded in the callback
+    // (don't totally understand why, allegedly it may change in the future)
+    ImGui_ImplOpenGL3_DestroyFontsTexture();
+
+    ImFontAtlas* _unused;
+    std::tie(_unused, regularFont, monoFont) = options::prepareImGuiFontsCallback();
+
+    ImGui_ImplOpenGL3_CreateFontsTexture();
+  }
+
+
+  if (options::configureImGuiStyleCallback) {
+    options::configureImGuiStyleCallback();
+  }
 }
 
 
@@ -130,6 +198,7 @@ void GLEngineGLFW::shutdownImGui() {
   // ImGui shutdown things
   ImGui_ImplOpenGL3_Shutdown();
   ImGui_ImplGlfw_Shutdown();
+  ImPlot::DestroyContext();
   ImGui::DestroyContext();
 }
 

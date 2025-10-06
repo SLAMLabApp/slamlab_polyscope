@@ -41,6 +41,11 @@ extern int maxFPS;
 // NOTE: some platforms may ignore the setting.
 extern bool enableVSync;
 
+// When using the alternate `frameTick()` control flow instead of `show()`, how should framerate-limiting maxFPS/vsync
+// features be respected? (which might caues the program to block on the call to frameTick()). (default:
+// LimitFPSMode::SkipFramesToHitTarget)
+extern LimitFPSMode frameTickLimitFPSMode;
+
 // Read preferences (window size, etc) from startup file, write to same file on exit (default: true)
 extern bool usePrefsFile;
 
@@ -85,6 +90,8 @@ extern float shadowDarkness;
 
 extern bool screenshotTransparency;     // controls whether screenshots taken by clicking the GUI button have a
                                         // transparent background
+extern bool screenshotWithImGuiUI;      // controls whether screenshots taken by clicking the GUI button have a
+                                        // transparent background
 extern std::string screenshotExtension; // sets the extension used for automatically-numbered screenshots (e.g. by
                                         // clicking the GUI button)
 
@@ -92,6 +99,9 @@ extern std::string screenshotExtension; // sets the extension used for automatic
 
 // SSAA scaling in pixel multiples
 extern int ssaaFactor;
+
+// DPI scaling to scale the UI on high-resolutoin screens
+extern float uiScale;
 
 // Transparency settings for the renderer
 extern TransparencyMode transparencyMode;
