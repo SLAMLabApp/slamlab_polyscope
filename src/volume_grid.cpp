@@ -84,9 +84,84 @@ void VolumeGrid::buildCustomUI() {
     }
     ImGui::PopItemWidth();
   }
+
+  // === Scalar filtering controls
+  // Only show if there are cell scalar quantities available
+  {
+    bool hasCellScalarQuantities = false;
+    for (auto& q : quantities) {
+      if (dynamic_cast<VolumeGridCellScalarQuantity*>(q.second.get())) {
+        hasCellScalarQuantities = true;
+        break;
+      }
+    }
+
+    if (hasCellScalarQuantities) {
+      ImGui::Separator();
+      if (ImGui::CollapsingHeader("Cell scalar filtering")) {
+        ImGui::Indent(10.f);
+
+        if (ImGui::Checkbox("Enable Filter", &useScalarFiltering)) {
+          if (useScalarFiltering && filterQuantityName.empty()) {
+            // Try to find the first cell scalar quantity
+            for (auto& q : quantities) {
+              VolumeGridCellScalarQuantity* cellQ = dynamic_cast<VolumeGridCellScalarQuantity*>(q.second.get());
+              if (cellQ) {
+                filterQuantityName = q.first;
+                break;
+              }
+            }
+          }
+          requestRedraw();
+        }
+
+        if (useScalarFiltering) {
+          ImGui::Indent(10.f);
+
+          // Dropdown for quantity selection
+          ImGui::PushItemWidth(150);
+          if (ImGui::BeginCombo("Quantity", filterQuantityName.c_str())) {
+            for (auto& q : quantities) {
+              VolumeGridCellScalarQuantity* cellQ = dynamic_cast<VolumeGridCellScalarQuantity*>(q.second.get());
+              if (cellQ) {
+                bool isSelected = (filterQuantityName == q.first);
+                if (ImGui::Selectable(q.first.c_str(), isSelected)) {
+                  filterQuantityName = q.first;
+                  requestRedraw();
+                }
+                if (isSelected) {
+                  ImGui::SetItemDefaultFocus();
+                }
+              }
+            }
+            ImGui::EndCombo();
+          }
+          ImGui::PopItemWidth();
+
+          // Mode selector (show above/below threshold)
+          ImGui::PushItemWidth(150);
+          const char* modes[] = {"Show Above", "Show Below"};
+          int currentMode = filterShowAbove ? 0 : 1;
+          if (ImGui::Combo("Mode", &currentMode, modes, 2)) {
+            filterShowAbove = (currentMode == 0);
+            requestRedraw();
+          }
+          ImGui::PopItemWidth();
+
+          // Threshold slider
+          ImGui::PushItemWidth(150);
+          if (ImGui::SliderFloat("Threshold", &filterThreshold, -10.0f, 10.0f)) {
+            requestRedraw();
+          }
+          ImGui::PopItemWidth();
+
+          ImGui::Indent(-10.f);
+        }
+        ImGui::Indent(-10.f);
+      }
+    }
+  }
 }
-
-
 void VolumeGrid::buildCustomOptionsUI() {
   if (render::buildMaterialOptionsGui(material.get())) {
     material.manuallyChanged();
@@ -187,6 +262,11 @@ std::vector<std::string> VolumeGrid::addGridCubeRules(std::vector<std::string> i
     initRules.push_back("GRIDCUBE_CULLPOS_FROM_CENTER");
   }
 
+  // Add scalar filtering rule if enabled
+  if (useScalarFiltering && !filterQuantityName.empty()) {
+    initRules.push_back("GRIDCUBE_SCALAR_FILTER");
+  }
+
   return initRules;
 }
 
@@ -196,6 +276,25 @@ void VolumeGrid::setGridCubeUniforms(render::ShaderProgram& p, bool withShade) {
   p.setUniform("u_boundMax", boundMax);
   p.setUniform("u_cubeSizeFactor", 1.f - cubeSizeFactor.get());
   p.setUniform("u_gridSpacingReference", gridSpacingReference());
+
+  // Pass scalar filtering parameters
+  if (useScalarFiltering && !filterQuantityName.empty()) {
+    p.setUniform("u_scalarFilterEnabled", 1);
+    p.setUniform("u_scalarFilterThreshold", filterThreshold);
+    p.setUniform("u_scalarFilterShowAbove", filterShowAbove ? 1 : 0);
+
+    VolumeGridQuantity* filterQuantity = getQuantity(filterQuantityName);
+    if (filterQuantity) {
+      VolumeGridCellScalarQuantity* cellScalarQuantity = dynamic_cast<VolumeGridCellScalarQuantity*>(filterQuantity);
+      if (cellScalarQuantity) {
+        p.setTextureFromBuffer("t_scalarFilterData", cellScalarQuantity->values.getRenderTextureBuffer().get());
+      }
+    }
+  } else {
+    p.setUniform("u_scalarFilterEnabled", 0);
+    p.setUniform("u_scalarFilterThreshold", 0.0f);
+    p.setUniform("u_scalarFilterShowAbove", 1);
+  }
 
   if (withShade) {
 
@@ -395,6 +494,32 @@ VolumeGrid* VolumeGrid::setCubeSizeFactor(double newVal) {
   return this;
 }
 double VolumeGrid::getCubeSizeFactor() { return cubeSizeFactor.get(); }
+
+// === Scalar filtering functions
+
+VolumeGrid* VolumeGrid::setScalarFilter(std::string quantityName, float threshold, bool showAbove) {
+  filterQuantityName = quantityName;
+  filterThreshold = threshold;
+  filterShowAbove = showAbove;
+  useScalarFiltering = true;
+  requestRedraw();
+  return this;
+}
+
+VolumeGrid* VolumeGrid::clearScalarFilter() {
+  useScalarFiltering = false;
+  filterQuantityName = "";
+  requestRedraw();
+  return this;
+}
+
+bool VolumeGrid::getScalarFilterEnabled() { return useScalarFiltering; }
+
+std::string VolumeGrid::getScalarFilterQuantity() { return filterQuantityName; }
+
+float VolumeGrid::getScalarFilterThreshold() { return filterThreshold; }
+
+bool VolumeGrid::getScalarFilterShowAbove() { return filterShowAbove; }
 
 // === Register functions
 

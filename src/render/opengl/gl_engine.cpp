@@ -2559,6 +2559,7 @@ void GLEngine::populateDefaultShadersAndRules() {
   registerShaderRule("GRIDCUBE_WIREFRAME", GRIDCUBE_WIREFRAME);
   registerShaderRule("GRIDCUBE_CONSTANT_PICK", GRIDCUBE_CONSTANT_PICK);
   registerShaderRule("GRIDCUBE_CULLPOS_FROM_CENTER", GRIDCUBE_CULLPOS_FROM_CENTER);
+  registerShaderRule("GRIDCUBE_SCALAR_FILTER", GRIDCUBE_SCALAR_FILTER);
 
   // sphere things
   registerShaderRule("SPHERE_PROPAGATE_VALUE", SPHERE_PROPAGATE_VALUE);

@@ -269,12 +269,16 @@ const ShaderStageSpecification FLEX_GRIDCUBE_PLANE_FRAG_SHADER = {
     {
         {"u_gridSpacingReference", RenderDataType::Vector3Float},
         {"u_cubeSizeFactor", RenderDataType::Float},
+        {"u_scalarFilterEnabled", RenderDataType::Int},
+        {"u_scalarFilterThreshold", RenderDataType::Float},
+        {"u_scalarFilterShowAbove", RenderDataType::Int},
     }, 
 
     { }, // attributes
     
     // textures 
     {
+        {"t_scalarFilterData", 3},
     },
  
     // source
@@ -313,6 +317,9 @@ R"(
            if(maxCoord > 1.f + REF_EPS) { // note the threshold here, hacky but seems okay
              discard;
            }
+
+           // Apply scalar filtering if enabled
+           ${ GRIDCUBE_SCALAR_FILTER }$
            
            float depth = gl_FragCoord.z;
            ${ GLOBAL_FRAGMENT_FILTER_PREP }$
@@ -460,6 +467,71 @@ const ShaderReplacementRule GRIDCUBE_CULLPOS_FROM_CENTER(
     },
     /* attributes */ {},
     /* textures */ {}
+);
+
+const ShaderReplacementRule GRIDCUBE_SCALAR_FILTER(
+    /* rule name */ "GRIDCUBE_SCALAR_FILTER",
+    {
+        /* replacement sources */
+      {"FRAG_DECLARATIONS", R"(
+          uniform int u_scalarFilterEnabled;
+          uniform float u_scalarFilterThreshold;
+          uniform int u_scalarFilterShowAbove;
+          uniform sampler3D t_scalarFilterData;
+        )"},
+      {"GRIDCUBE_SCALAR_FILTER", R"(
+          if (u_scalarFilterEnabled == 1) {
+            // Sample the scalar value for this cell
+            // cellInd gives us the cell indices, we need to convert to texture coordinates
+            vec3 texCoord = (cellInd3f + 0.5) / textureSize(t_scalarFilterData, 0);
+            float scalarValue = texture(t_scalarFilterData, texCoord).r;
+            
+            // Determine if we should show this cell
+            bool shouldShow = (u_scalarFilterShowAbove == 1) ? 
+                              (scalarValue > u_scalarFilterThreshold) : 
+                              (scalarValue < u_scalarFilterThreshold);
+            
+            if (!shouldShow) {
+              discard;
+            }
+          }
+        )"},
+      {"GRID_PLANE_NEIGHBOR_FILTER", R"(
+          // Check if neighbor is filtered out by scalar filter
+          if (u_scalarFilterEnabled == 1 && neighIsVisible) {
+            // Compute neighbor cell index
+            vec3 neighCellInd3f = floor(neighCoordUnit / u_gridSpacingReference - REF_EPS*a_refNormalToFrag);
+            
+            // Check bounds - make sure neighbor is within grid
+            vec3 gridDims = vec3(textureSize(t_scalarFilterData, 0));
+            bool neighInBounds = all(greaterThanEqual(neighCellInd3f, vec3(0.0))) && 
+                                 all(lessThan(neighCellInd3f, gridDims));
+            
+            if (neighInBounds) {
+              vec3 neighTexCoord = (neighCellInd3f + 0.5) / gridDims;
+              float neighScalarValue = texture(t_scalarFilterData, neighTexCoord).r;
+              
+              bool neighPassesFilter = (u_scalarFilterShowAbove == 1) ? 
+                                       (neighScalarValue > u_scalarFilterThreshold) : 
+                                       (neighScalarValue < u_scalarFilterThreshold);
+              
+              // If neighbor is filtered out, we need to render this face
+              if (!neighPassesFilter) {
+                neighIsVisible = false;
+              }
+            }
+          }
+        )"},
+    },
+    /* uniforms */ {
+      {"u_scalarFilterEnabled", RenderDataType::Int},
+      {"u_scalarFilterThreshold", RenderDataType::Float},
+      {"u_scalarFilterShowAbove", RenderDataType::Int},
+    },
+    /* attributes */ {},
+    /* textures */ {
+      {"t_scalarFilterData", 3},
+    }
 );
 
 }

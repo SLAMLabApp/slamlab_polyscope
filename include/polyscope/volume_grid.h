@@ -148,6 +148,14 @@ public:
   VolumeGrid* setCubeSizeFactor(double newVal);
   double getCubeSizeFactor();
 
+  // === Scalar filtering for cells
+  VolumeGrid* setScalarFilter(std::string quantityName, float threshold, bool showAbove = true);
+  VolumeGrid* clearScalarFilter();
+  bool getScalarFilterEnabled();
+  std::string getScalarFilterQuantity();
+  float getScalarFilterThreshold();
+  bool getScalarFilterShowAbove();
+
 private:
   
   // Field data
@@ -166,6 +174,12 @@ private:
   PersistentValue<std::string> material;
   PersistentValue<float> edgeWidth;
   PersistentValue<float> cubeSizeFactor;
+
+  // === Scalar filtering parameters
+  bool useScalarFiltering = false;
+  std::string filterQuantityName = "";
+  float filterThreshold = 0.0f;
+  bool filterShowAbove = true; // if true, show cells above threshold; if false, show below
 
   // == Compute indices & geometry data
   void computeGridPlaneReferenceGeometry();

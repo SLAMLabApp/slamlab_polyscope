@@ -22,6 +22,7 @@ extern const ShaderReplacementRule GRIDCUBE_PROPAGATE_CELL_VALUE;
 extern const ShaderReplacementRule GRIDCUBE_WIREFRAME;
 extern const ShaderReplacementRule GRIDCUBE_CONSTANT_PICK;
 extern const ShaderReplacementRule GRIDCUBE_CULLPOS_FROM_CENTER;
+extern const ShaderReplacementRule GRIDCUBE_SCALAR_FILTER;
 
 
 } // namespace backend_openGL3
