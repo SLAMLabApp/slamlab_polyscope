@@ -27,6 +27,7 @@
 #include "polyscope/render/opengl/shaders/texture_draw_shaders.h"
 #include "polyscope/render/opengl/shaders/vector_shaders.h"
 #include "polyscope/render/opengl/shaders/volume_mesh_shaders.h"
+#include "polyscope/render/opengl/shaders/voxel_shaders.h"
 
 #include "stb_image.h"
 
@@ -2453,6 +2454,7 @@ void GLEngine::populateDefaultShadersAndRules() {
   registerShaderProgram("SLICE_TETS", {SLICE_TETS_VERT_SHADER, SLICE_TETS_GEOM_SHADER, SLICE_TETS_FRAG_SHADER}, DrawMode::Points);
   registerShaderProgram("RAYCAST_SPHERE", {FLEX_SPHERE_VERT_SHADER, FLEX_SPHERE_GEOM_SHADER, FLEX_SPHERE_FRAG_SHADER}, DrawMode::Points);
   registerShaderProgram("POINT_QUAD", {FLEX_POINTQUAD_VERT_SHADER, FLEX_POINTQUAD_GEOM_SHADER, FLEX_POINTQUAD_FRAG_SHADER}, DrawMode::Points);
+  registerShaderProgram("POINT_VOXEL", {FLEX_POINTVOXEL_VERT_SHADER, FLEX_POINTVOXEL_GEOM_SHADER, FLEX_POINTVOXEL_FRAG_SHADER}, DrawMode::Points);
   registerShaderProgram("GRIDCUBE", {FLEX_GRIDCUBE_VERT_SHADER, FLEX_GRIDCUBE_GEOM_SHADER, FLEX_GRIDCUBE_FRAG_SHADER}, DrawMode::Points);
   registerShaderProgram("GRIDCUBE_PLANE", {FLEX_GRIDCUBE_PLANE_VERT_SHADER, FLEX_GRIDCUBE_PLANE_FRAG_SHADER}, DrawMode::Triangles);
   registerShaderProgram("RAYCAST_VECTOR", {FLEX_VECTOR_VERT_SHADER, FLEX_VECTOR_GEOM_SHADER, FLEX_VECTOR_FRAG_SHADER}, DrawMode::Points);
@@ -2568,6 +2570,7 @@ void GLEngine::populateDefaultShadersAndRules() {
   registerShaderRule("SPHERE_PROPAGATE_COLOR", SPHERE_PROPAGATE_COLOR);
   registerShaderRule("SPHERE_CULLPOS_FROM_CENTER", SPHERE_CULLPOS_FROM_CENTER);
   registerShaderRule("SPHERE_CULLPOS_FROM_CENTER_QUAD", SPHERE_CULLPOS_FROM_CENTER_QUAD);
+  registerShaderRule("SPHERE_CULLPOS_FROM_CENTER_VOXEL", SPHERE_CULLPOS_FROM_CENTER_VOXEL);
   registerShaderRule("SPHERE_VARIABLE_SIZE", SPHERE_VARIABLE_SIZE);
 
   // vector things

@@ -217,6 +217,8 @@ std::string PointCloud::getShaderNameForRenderMode() {
     return "RAYCAST_SPHERE";
   else if (getPointRenderMode() == PointRenderMode::Quad)
     return "POINT_QUAD";
+  else if (getPointRenderMode() == PointRenderMode::Voxel)
+    return "POINT_VOXEL";
   return "ERROR";
 }
 
@@ -255,6 +257,8 @@ std::vector<std::string> PointCloud::addPointCloudRules(std::vector<std::string>
         initRules.push_back("SPHERE_CULLPOS_FROM_CENTER");
       else if (getPointRenderMode() == PointRenderMode::Quad)
         initRules.push_back("SPHERE_CULLPOS_FROM_CENTER_QUAD");
+      else if (getPointRenderMode() == PointRenderMode::Voxel)
+        initRules.push_back("SPHERE_CULLPOS_FROM_CENTER_VOXEL");
     }
     if (transparencyQuantityName != "") {
       initRules.push_back("SPHERE_PROPAGATE_VALUEALPHA");
@@ -309,7 +313,9 @@ void PointCloud::buildCustomUI() {
   }
   ImGui::SameLine();
   ImGui::PushItemWidth(70 * options::uiScale);
-  if (ImGui::SliderFloat("Radius", pointRadius.get().getValuePtr(), 0.0, .1, "%.5f",
+  // Display different label based on render mode
+  const char* sizeLabel = (getPointRenderMode() == PointRenderMode::Voxel) ? "Side length" : "Radius";
+  if (ImGui::SliderFloat(sizeLabel, pointRadius.get().getValuePtr(), 0.0, .1, "%.5f",
                          ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat)) {
     pointRadius.manuallyChanged();
     requestRedraw();
@@ -325,7 +331,7 @@ void PointCloud::buildCustomOptionsUI() {
 
   if (ImGui::BeginMenu("Point Render Mode")) {
 
-    for (const PointRenderMode& m : {PointRenderMode::Sphere, PointRenderMode::Quad}) {
+    for (const PointRenderMode& m : {PointRenderMode::Sphere, PointRenderMode::Quad, PointRenderMode::Voxel}) {
       bool selected = (m == getPointRenderMode());
       std::string fancyName;
       switch (m) {
@@ -334,6 +340,9 @@ void PointCloud::buildCustomOptionsUI() {
         break;
       case PointRenderMode::Quad:
         fancyName = "quad (fast)";
+        break;
+      case PointRenderMode::Voxel:
+        fancyName = "voxel (cube)";
         break;
       }
       if (ImGui::MenuItem(fancyName.c_str(), NULL, selected)) {
@@ -528,6 +537,9 @@ PointCloud* PointCloud::setPointRenderMode(PointRenderMode newVal) {
   case PointRenderMode::Quad:
     pointRenderMode = "quad";
     break;
+  case PointRenderMode::Voxel:
+    pointRenderMode = "voxel";
+    break;
   }
   refresh();
   polyscope::requestRedraw();
@@ -539,6 +551,8 @@ PointRenderMode PointCloud::getPointRenderMode() {
     return PointRenderMode::Sphere;
   else if (pointRenderMode.get() == "quad")
     return PointRenderMode::Quad;
+  else if (pointRenderMode.get() == "voxel")
+    return PointRenderMode::Voxel;
   return PointRenderMode::Sphere; // should never happen
 }
 

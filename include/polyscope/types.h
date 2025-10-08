@@ -15,9 +15,9 @@ enum class TransparencyMode { None = 0, Simple, Pretty };
 enum class GroundPlaneMode { None, Tile, TileReflection, ShadowOnly };
 enum class GroundPlaneHeightMode { Automatic = 0, Manual };
 enum class BackFacePolicy { Identical, Different, Custom, Cull };
-enum class LimitFPSMode { IgnoreLimits = 0, BlockToHitTarget, SkipFramesToHitTarget};
+enum class LimitFPSMode { IgnoreLimits = 0, BlockToHitTarget, SkipFramesToHitTarget };
 
-enum class PointRenderMode { Sphere = 0, Quad };
+enum class PointRenderMode { Sphere = 0, Quad, Voxel };
 enum class MeshElement { VERTEX = 0, FACE, EDGE, HALFEDGE, CORNER };
 enum class MeshShadeStyle { Smooth = 0, Flat, TriFlat };
 enum class MeshSelectionMode { Auto = 0, VerticesOnly, FacesOnly };
