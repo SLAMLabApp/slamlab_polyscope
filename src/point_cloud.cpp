@@ -315,8 +315,8 @@ void PointCloud::buildCustomUI() {
   ImGui::PushItemWidth(70 * options::uiScale);
 
   if (getPointRenderMode() == PointRenderMode::Voxel) {
-    float metricValue = static_cast<float>(getPointRadius());
-    float maxMetric = 10.0f * polyscope::state::lengthScale;
+    float metricValue = static_cast<float>(getPointRadius() * 2);
+    float maxMetric = 3.0f;
     if (ImGui::SliderFloat("Length [m]", &metricValue, 0.0f, maxMetric, "%.3f",
                            ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat)) {
       double relativeVal =
