@@ -321,7 +321,7 @@ void PointCloud::buildCustomUI() {
                            ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat)) {
       // Convert metric value to relative and set via normal radius
       double relativeVal = (metricValue / 2) / polyscope::state::lengthScale;
-      setPointRadius(relativeVal, true); // set as relative
+      setPointRadius(relativeVal, true);
       requestRedraw();
     }
   } else {
