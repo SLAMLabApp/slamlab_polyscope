@@ -319,8 +319,8 @@ void PointCloud::buildCustomUI() {
     float maxMetric = 10.0f * polyscope::state::lengthScale;
     if (ImGui::SliderFloat("Length [m]", &metricValue, 0.0f, maxMetric, "%.3f",
                            ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat)) {
-      // Convert metric value to relative and set via normal radius
-      double relativeVal = (metricValue / 2) / polyscope::state::lengthScale;
+      double relativeVal =
+          (metricValue / 2) / polyscope::state::lengthScale; // voxel length is half the length due to radius being used
       setPointRadius(relativeVal, true);
       requestRedraw();
     }
