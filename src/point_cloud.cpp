@@ -325,7 +325,6 @@ void PointCloud::buildCustomUI() {
       requestRedraw();
     }
   } else {
-    // Show relative radius for sphere and quad modes
     if (ImGui::SliderFloat("Radius", pointRadius.get().getValuePtr(), 0.0, .1, "%.5f",
                            ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat)) {
       pointRadius.manuallyChanged();
