@@ -149,6 +149,15 @@ public:
   PointCloud* setMaterial(std::string name);
   std::string getMaterial();
 
+  // Color of edges (for voxel render mode)
+  PointCloud* setEdgeColor(glm::vec3 val);
+  glm::vec3 getEdgeColor();
+
+  // Width of the edges (for voxel render mode). Scaled such that 1 is a reasonable weight for visible edges,
+  // but values > 1 can be used for bigger edges. Use 0. to disable.
+  PointCloud* setEdgeWidth(double newVal);
+  double getEdgeWidth();
+
   // Rendering helpers used by quantities
   void setPointCloudUniforms(render::ShaderProgram& p);
   void setPointProgramGeometryAttributes(render::ShaderProgram& p);
@@ -167,6 +176,8 @@ private:
   PersistentValue<glm::vec3> pointColor;
   PersistentValue<ScaledValue<float>> pointRadius;
   PersistentValue<std::string> material;
+  PersistentValue<glm::vec3> edgeColor;
+  PersistentValue<float> edgeWidth;
 
   // Drawing related things
   // if nullptr, prepare() (resp. preparePick()) needs to be called

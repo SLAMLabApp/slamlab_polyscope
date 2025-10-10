@@ -30,7 +30,9 @@ PointCloud::PointCloud(std::string name, std::vector<glm::vec3> points_)
       pointRenderMode(uniquePrefix() + "pointRenderMode", "sphere"),
       pointColor(uniquePrefix() + "pointColor", getNextUniqueColor()),
       pointRadius(uniquePrefix() + "pointRadius", relativeValue(0.005)),
-      material(uniquePrefix() + "material", "clay")
+      material(uniquePrefix() + "material", "clay"),
+      edgeColor(uniquePrefix() + "edgeColor", glm::vec3{0., 0., 0.}),
+      edgeWidth(uniquePrefix() + "edgeWidth", 0.f)
 // clang-format on
 {
   points.checkInvalidValues();
@@ -61,6 +63,12 @@ void PointCloud::setPointCloudUniforms(render::ShaderProgram& p) {
     }
 
     p.setUniform("u_pointRadius", pointRadius.get().asAbsolute() / scalarQScale);
+  }
+
+  // Set edge uniforms for voxel mode (always set them so shader doesn't fail)
+  if (getPointRenderMode() == PointRenderMode::Voxel) {
+    p.setUniform("u_edgeWidth", getEdgeWidth() * render::engine->getCurrentPixelScaling());
+    p.setUniform("u_edgeColor", getEdgeColor());
   }
 }
 
@@ -263,6 +271,8 @@ std::vector<std::string> PointCloud::addPointCloudRules(std::vector<std::string>
     if (transparencyQuantityName != "") {
       initRules.push_back("SPHERE_PROPAGATE_VALUEALPHA");
     }
+    // Note: Edge rendering for voxels is handled directly in the voxel shader
+    // using barycentric coordinates, not via a separate shader rule
   }
   return initRules;
 }
@@ -333,6 +343,41 @@ void PointCloud::buildCustomUI() {
   }
 
   ImGui::PopItemWidth();
+
+  // Edge options (only for voxel render mode)
+  if (getPointRenderMode() == PointRenderMode::Voxel) {
+    ImGui::PushItemWidth(100 * options::uiScale);
+    if (edgeWidth.get() == 0.) {
+      bool showEdges = false;
+      if (ImGui::Checkbox("Edges", &showEdges)) {
+        setEdgeWidth(1.);
+      }
+    } else {
+      bool showEdges = true;
+      if (ImGui::Checkbox("Edges", &showEdges)) {
+        setEdgeWidth(0.);
+      }
+
+      // Edge color
+      ImGui::PushItemWidth(100 * options::uiScale);
+      if (ImGui::ColorEdit3("Edge Color", &edgeColor.get()[0], ImGuiColorEditFlags_NoInputs))
+        setEdgeColor(edgeColor.get());
+      ImGui::PopItemWidth();
+
+      // Edge width
+      ImGui::SameLine();
+      ImGui::PushItemWidth(75 * options::uiScale);
+      if (ImGui::SliderFloat("Width", &edgeWidth.get(), 0.001, 3.)) {
+        // NOTE: this intentionally circumvents the setEdgeWidth() setter to avoid repopulating the buffer as the
+        // slider is dragged---otherwise we repopulate the buffer on every change, which mostly works fine. This is a
+        // lazy solution instead of better state/buffer management.
+        edgeWidth.manuallyChanged();
+        requestRedraw();
+      }
+      ImGui::PopItemWidth();
+    }
+    ImGui::PopItemWidth();
+  }
 }
 
 void PointCloud::buildCustomOptionsUI() {
@@ -589,5 +634,20 @@ PointCloud* PointCloud::setPointRadius(double newVal, bool isRelative) {
   return this;
 }
 double PointCloud::getPointRadius() { return pointRadius.get().asAbsolute(); }
+
+PointCloud* PointCloud::setEdgeColor(glm::vec3 val) {
+  edgeColor = val;
+  polyscope::requestRedraw();
+  return this;
+}
+glm::vec3 PointCloud::getEdgeColor() { return edgeColor.get(); }
+
+PointCloud* PointCloud::setEdgeWidth(double newVal) {
+  edgeWidth = newVal;
+  refresh();
+  requestRedraw();
+  return this;
+}
+double PointCloud::getEdgeWidth() { return edgeWidth.get(); }
 
 } // namespace polyscope

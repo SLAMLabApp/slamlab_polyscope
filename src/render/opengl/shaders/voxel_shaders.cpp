@@ -1,4 +1,4 @@
-// Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
+// Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. http://polyscope.run
 
 #include "polyscope/render/opengl/shaders/voxel_shaders.h"
 
@@ -75,6 +75,7 @@ R"(
         uniform mat4 u_projMatrix;
         uniform float u_pointRadius;
         out vec3 voxelNormal;
+        out vec2 quadCoord;
 
         ${ GEOM_DECLARATIONS }$
 
@@ -116,68 +117,68 @@ R"(
             
             // Front face (z+) - world space normal
             vec3 norm_front = normalMatrix * vec3(0, 0, 1);
-            ${ GEOM_PER_EMIT }$ voxelNormal = norm_front; gl_Position = v4; EmitVertex();
-            ${ GEOM_PER_EMIT }$ voxelNormal = norm_front; gl_Position = v5; EmitVertex();
-            ${ GEOM_PER_EMIT }$ voxelNormal = norm_front; gl_Position = v7; EmitVertex();
+            ${ GEOM_PER_EMIT }$ voxelNormal = norm_front; quadCoord = vec2(0,0); gl_Position = v4; EmitVertex();
+            ${ GEOM_PER_EMIT }$ voxelNormal = norm_front; quadCoord = vec2(1,0); gl_Position = v5; EmitVertex();
+            ${ GEOM_PER_EMIT }$ voxelNormal = norm_front; quadCoord = vec2(0,1); gl_Position = v7; EmitVertex();
             EndPrimitive();
-            ${ GEOM_PER_EMIT }$ voxelNormal = norm_front; gl_Position = v5; EmitVertex();
-            ${ GEOM_PER_EMIT }$ voxelNormal = norm_front; gl_Position = v6; EmitVertex();
-            ${ GEOM_PER_EMIT }$ voxelNormal = norm_front; gl_Position = v7; EmitVertex();
+            ${ GEOM_PER_EMIT }$ voxelNormal = norm_front; quadCoord = vec2(1,0); gl_Position = v5; EmitVertex();
+            ${ GEOM_PER_EMIT }$ voxelNormal = norm_front; quadCoord = vec2(1,1); gl_Position = v6; EmitVertex();
+            ${ GEOM_PER_EMIT }$ voxelNormal = norm_front; quadCoord = vec2(0,1); gl_Position = v7; EmitVertex();
             EndPrimitive();
             
             // Back face (z-) - world space normal
             vec3 norm_back = normalMatrix * vec3(0, 0, -1);
-            ${ GEOM_PER_EMIT }$ voxelNormal = norm_back; gl_Position = v0; EmitVertex();
-            ${ GEOM_PER_EMIT }$ voxelNormal = norm_back; gl_Position = v3; EmitVertex();
-            ${ GEOM_PER_EMIT }$ voxelNormal = norm_back; gl_Position = v1; EmitVertex();
+            ${ GEOM_PER_EMIT }$ voxelNormal = norm_back; quadCoord = vec2(0,0); gl_Position = v0; EmitVertex();
+            ${ GEOM_PER_EMIT }$ voxelNormal = norm_back; quadCoord = vec2(0,1); gl_Position = v3; EmitVertex();
+            ${ GEOM_PER_EMIT }$ voxelNormal = norm_back; quadCoord = vec2(1,0); gl_Position = v1; EmitVertex();
             EndPrimitive();
-            ${ GEOM_PER_EMIT }$ voxelNormal = norm_back; gl_Position = v1; EmitVertex();
-            ${ GEOM_PER_EMIT }$ voxelNormal = norm_back; gl_Position = v3; EmitVertex();
-            ${ GEOM_PER_EMIT }$ voxelNormal = norm_back; gl_Position = v2; EmitVertex();
+            ${ GEOM_PER_EMIT }$ voxelNormal = norm_back; quadCoord = vec2(1,0); gl_Position = v1; EmitVertex();
+            ${ GEOM_PER_EMIT }$ voxelNormal = norm_back; quadCoord = vec2(0,1); gl_Position = v3; EmitVertex();
+            ${ GEOM_PER_EMIT }$ voxelNormal = norm_back; quadCoord = vec2(1,1); gl_Position = v2; EmitVertex();
             EndPrimitive();
             
             // Right face (x+) - world space normal
             vec3 norm_right = normalMatrix * vec3(1, 0, 0);
-            ${ GEOM_PER_EMIT }$ voxelNormal = norm_right; gl_Position = v1; EmitVertex();
-            ${ GEOM_PER_EMIT }$ voxelNormal = norm_right; gl_Position = v2; EmitVertex();
-            ${ GEOM_PER_EMIT }$ voxelNormal = norm_right; gl_Position = v5; EmitVertex();
+            ${ GEOM_PER_EMIT }$ voxelNormal = norm_right; quadCoord = vec2(0,0); gl_Position = v1; EmitVertex();
+            ${ GEOM_PER_EMIT }$ voxelNormal = norm_right; quadCoord = vec2(0,1); gl_Position = v2; EmitVertex();
+            ${ GEOM_PER_EMIT }$ voxelNormal = norm_right; quadCoord = vec2(1,0); gl_Position = v5; EmitVertex();
             EndPrimitive();
-            ${ GEOM_PER_EMIT }$ voxelNormal = norm_right; gl_Position = v2; EmitVertex();
-            ${ GEOM_PER_EMIT }$ voxelNormal = norm_right; gl_Position = v6; EmitVertex();
-            ${ GEOM_PER_EMIT }$ voxelNormal = norm_right; gl_Position = v5; EmitVertex();
+            ${ GEOM_PER_EMIT }$ voxelNormal = norm_right; quadCoord = vec2(1,0); gl_Position = v2; EmitVertex();
+            ${ GEOM_PER_EMIT }$ voxelNormal = norm_right; quadCoord = vec2(1,1); gl_Position = v6; EmitVertex();
+            ${ GEOM_PER_EMIT }$ voxelNormal = norm_right; quadCoord = vec2(1,0); gl_Position = v5; EmitVertex();
             EndPrimitive();
             
             // Left face (x-) - world space normal
             vec3 norm_left = normalMatrix * vec3(-1, 0, 0);
-            ${ GEOM_PER_EMIT }$ voxelNormal = norm_left; gl_Position = v0; EmitVertex();
-            ${ GEOM_PER_EMIT }$ voxelNormal = norm_left; gl_Position = v4; EmitVertex();
-            ${ GEOM_PER_EMIT }$ voxelNormal = norm_left; gl_Position = v3; EmitVertex();
+            ${ GEOM_PER_EMIT }$ voxelNormal = norm_left; quadCoord = vec2(0,0); gl_Position = v0; EmitVertex();
+            ${ GEOM_PER_EMIT }$ voxelNormal = norm_left; quadCoord = vec2(1,0); gl_Position = v4; EmitVertex();
+            ${ GEOM_PER_EMIT }$ voxelNormal = norm_left; quadCoord = vec2(0,1); gl_Position = v3; EmitVertex();
             EndPrimitive();
-            ${ GEOM_PER_EMIT }$ voxelNormal = norm_left; gl_Position = v3; EmitVertex();
-            ${ GEOM_PER_EMIT }$ voxelNormal = norm_left; gl_Position = v4; EmitVertex();
-            ${ GEOM_PER_EMIT }$ voxelNormal = norm_left; gl_Position = v7; EmitVertex();
+            ${ GEOM_PER_EMIT }$ voxelNormal = norm_left; quadCoord = vec2(0,1); gl_Position = v3; EmitVertex();
+            ${ GEOM_PER_EMIT }$ voxelNormal = norm_left; quadCoord = vec2(1,0); gl_Position = v4; EmitVertex();
+            ${ GEOM_PER_EMIT }$ voxelNormal = norm_left; quadCoord = vec2(1,1); gl_Position = v7; EmitVertex();
             EndPrimitive();
             
             // Top face (y+) - world space normal
             vec3 norm_top = normalMatrix * vec3(0, 1, 0);
-            ${ GEOM_PER_EMIT }$ voxelNormal = norm_top; gl_Position = v3; EmitVertex();
-            ${ GEOM_PER_EMIT }$ voxelNormal = norm_top; gl_Position = v7; EmitVertex();
-            ${ GEOM_PER_EMIT }$ voxelNormal = norm_top; gl_Position = v2; EmitVertex();
+            ${ GEOM_PER_EMIT }$ voxelNormal = norm_top; quadCoord = vec2(0,0); gl_Position = v3; EmitVertex();
+            ${ GEOM_PER_EMIT }$ voxelNormal = norm_top; quadCoord = vec2(0,1); gl_Position = v7; EmitVertex();
+            ${ GEOM_PER_EMIT }$ voxelNormal = norm_top; quadCoord = vec2(1,0); gl_Position = v2; EmitVertex();
             EndPrimitive();
-            ${ GEOM_PER_EMIT }$ voxelNormal = norm_top; gl_Position = v2; EmitVertex();
-            ${ GEOM_PER_EMIT }$ voxelNormal = norm_top; gl_Position = v7; EmitVertex();
-            ${ GEOM_PER_EMIT }$ voxelNormal = norm_top; gl_Position = v6; EmitVertex();
+            ${ GEOM_PER_EMIT }$ voxelNormal = norm_top; quadCoord = vec2(1,0); gl_Position = v2; EmitVertex();
+            ${ GEOM_PER_EMIT }$ voxelNormal = norm_top; quadCoord = vec2(0,1); gl_Position = v7; EmitVertex();
+            ${ GEOM_PER_EMIT }$ voxelNormal = norm_top; quadCoord = vec2(1,1); gl_Position = v6; EmitVertex();
             EndPrimitive();
             
             // Bottom face (y-) - world space normal
             vec3 norm_bottom = normalMatrix * vec3(0, -1, 0);
-            ${ GEOM_PER_EMIT }$ voxelNormal = norm_bottom; gl_Position = v0; EmitVertex();
-            ${ GEOM_PER_EMIT }$ voxelNormal = norm_bottom; gl_Position = v1; EmitVertex();
-            ${ GEOM_PER_EMIT }$ voxelNormal = norm_bottom; gl_Position = v4; EmitVertex();
+            ${ GEOM_PER_EMIT }$ voxelNormal = norm_bottom; quadCoord = vec2(0,0); gl_Position = v0; EmitVertex();
+            ${ GEOM_PER_EMIT }$ voxelNormal = norm_bottom; quadCoord = vec2(1,0); gl_Position = v1; EmitVertex();
+            ${ GEOM_PER_EMIT }$ voxelNormal = norm_bottom; quadCoord = vec2(0,1); gl_Position = v4; EmitVertex();
             EndPrimitive();
-            ${ GEOM_PER_EMIT }$ voxelNormal = norm_bottom; gl_Position = v1; EmitVertex();
-            ${ GEOM_PER_EMIT }$ voxelNormal = norm_bottom; gl_Position = v5; EmitVertex();
-            ${ GEOM_PER_EMIT }$ voxelNormal = norm_bottom; gl_Position = v4; EmitVertex();
+            ${ GEOM_PER_EMIT }$ voxelNormal = norm_bottom; quadCoord = vec2(1,0); gl_Position = v1; EmitVertex();
+            ${ GEOM_PER_EMIT }$ voxelNormal = norm_bottom; quadCoord = vec2(1,1); gl_Position = v5; EmitVertex();
+            ${ GEOM_PER_EMIT }$ voxelNormal = norm_bottom; quadCoord = vec2(0,1); gl_Position = v4; EmitVertex();
             EndPrimitive();
         }
 
@@ -193,6 +194,8 @@ const ShaderStageSpecification FLEX_POINTVOXEL_FRAG_SHADER = {
     {
         {"u_projMatrix", RenderDataType::Matrix44Float},
         {"u_pointRadius", RenderDataType::Float},
+        {"u_edgeWidth", RenderDataType::Float},
+        {"u_edgeColor", RenderDataType::Vector3Float},
     }, 
 
     { }, // attributes
@@ -206,7 +209,10 @@ R"(
         ${ GLSL_VERSION }$
         uniform mat4 u_projMatrix; 
         uniform float u_pointRadius;
+        uniform float u_edgeWidth;
+        uniform vec3 u_edgeColor;
         in vec3 voxelNormal;
+        in vec2 quadCoord;
         layout(location = 0) out vec4 outputF;
 
         float LARGE_FLOAT();
@@ -232,13 +238,25 @@ R"(
            vec3 shadeNormal = normalize(voxelNormal);
            ${ GENERATE_LIT_COLOR }$
 
+           // Compute edge based on quad UV coordinates (0-1 on each face)
+           // Distance to nearest edge of the quad (not triangle diagonals)
+           vec2 fw = fwidth(quadCoord);
+           vec2 distToEdgeBottom = quadCoord / fw;
+           vec2 distToEdgeTop = (vec2(1.0) - quadCoord) / fw;
+           float minDistToEdge = min(min(distToEdgeBottom.x, distToEdgeBottom.y), 
+                                      min(distToEdgeTop.x, distToEdgeTop.y));
+           
+           // Mix between edge color and surface color based on distance
+           float edgeFactor = smoothstep(u_edgeWidth - 0.5, u_edgeWidth + 0.5, minDistToEdge);
+           vec3 finalColor = mix(u_edgeColor, litColor, edgeFactor);
+
            // Set alpha
            float alphaOut = 1.0;
            ${ GENERATE_ALPHA }$
 
            // Write output
-           litColor *= alphaOut; // premultiplied alpha
-           outputF = vec4(litColor, alphaOut);
+           finalColor *= alphaOut; // premultiplied alpha
+           outputF = vec4(finalColor, alphaOut);
         }
 )"
 };
