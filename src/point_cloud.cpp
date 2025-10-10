@@ -313,13 +313,28 @@ void PointCloud::buildCustomUI() {
   }
   ImGui::SameLine();
   ImGui::PushItemWidth(70 * options::uiScale);
-  // Display different label based on render mode
-  const char* sizeLabel = (getPointRenderMode() == PointRenderMode::Voxel) ? "Side length" : "Radius";
-  if (ImGui::SliderFloat(sizeLabel, pointRadius.get().getValuePtr(), 0.0, .1, "%.5f",
-                         ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat)) {
-    pointRadius.manuallyChanged();
-    requestRedraw();
+
+  // For voxels, display metric side length; for sphere/quad, display relative radius
+  if (getPointRenderMode() == PointRenderMode::Voxel) {
+    // Show metric side length in actual world units, but use normal radius internally
+    float metricValue = static_cast<float>(getPointRadius()); // get absolute value
+    float maxMetric = 10.0f * polyscope::state::lengthScale;  // reasonable max value
+    if (ImGui::SliderFloat("Side length [m]", &metricValue, 0.0f, maxMetric, "%.3f",
+                           ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat)) {
+      // Convert metric value to relative and set via normal radius
+      double relativeVal = metricValue / polyscope::state::lengthScale;
+      setPointRadius(relativeVal, true); // set as relative
+      requestRedraw();
+    }
+  } else {
+    // Show relative radius for sphere and quad modes
+    if (ImGui::SliderFloat("Radius", pointRadius.get().getValuePtr(), 0.0, .1, "%.5f",
+                           ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat)) {
+      pointRadius.manuallyChanged();
+      requestRedraw();
+    }
   }
+
   ImGui::PopItemWidth();
 }
 
