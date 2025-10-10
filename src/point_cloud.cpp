@@ -317,10 +317,10 @@ void PointCloud::buildCustomUI() {
   if (getPointRenderMode() == PointRenderMode::Voxel) {
     float metricValue = static_cast<float>(getPointRadius());
     float maxMetric = 10.0f * polyscope::state::lengthScale;
-    if (ImGui::SliderFloat("Side length [m]", &metricValue, 0.0f, maxMetric, "%.3f",
+    if (ImGui::SliderFloat("Length [m]", &metricValue, 0.0f, maxMetric, "%.3f",
                            ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat)) {
       // Convert metric value to relative and set via normal radius
-      double relativeVal = metricValue / polyscope::state::lengthScale;
+      double relativeVal = (metricValue / 2) / polyscope::state::lengthScale;
       setPointRadius(relativeVal, true); // set as relative
       requestRedraw();
     }
