@@ -314,7 +314,6 @@ void PointCloud::buildCustomUI() {
   ImGui::SameLine();
   ImGui::PushItemWidth(70 * options::uiScale);
 
-  // For voxels, display metric side length; for sphere/quad, display relative radius
   if (getPointRenderMode() == PointRenderMode::Voxel) {
     float metricValue = static_cast<float>(getPointRadius()); // get absolute value
     float maxMetric = 10.0f * polyscope::state::lengthScale;  // reasonable max value
