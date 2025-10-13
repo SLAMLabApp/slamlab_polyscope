@@ -143,7 +143,7 @@ R"(
             ${ GEOM_PER_EMIT }$ voxelNormal = norm_right; quadCoord = vec2(0,1); gl_Position = v2; EmitVertex();
             ${ GEOM_PER_EMIT }$ voxelNormal = norm_right; quadCoord = vec2(1,0); gl_Position = v5; EmitVertex();
             EndPrimitive();
-            ${ GEOM_PER_EMIT }$ voxelNormal = norm_right; quadCoord = vec2(1,0); gl_Position = v2; EmitVertex();
+            ${ GEOM_PER_EMIT }$ voxelNormal = norm_right; quadCoord = vec2(0,1); gl_Position = v2; EmitVertex();
             ${ GEOM_PER_EMIT }$ voxelNormal = norm_right; quadCoord = vec2(1,1); gl_Position = v6; EmitVertex();
             ${ GEOM_PER_EMIT }$ voxelNormal = norm_right; quadCoord = vec2(1,0); gl_Position = v5; EmitVertex();
             EndPrimitive();
