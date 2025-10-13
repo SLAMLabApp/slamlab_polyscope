@@ -149,6 +149,10 @@ public:
   PointCloud* setMaterial(std::string name);
   std::string getMaterial();
 
+  // Enable/disable edges (for voxel render mode)
+  PointCloud* setEdgeEnabled(bool newVal);
+  bool getEdgeEnabled();
+
   // Color of edges (for voxel render mode)
   PointCloud* setEdgeColor(glm::vec3 val);
   glm::vec3 getEdgeColor();
@@ -176,6 +180,7 @@ private:
   PersistentValue<glm::vec3> pointColor;
   PersistentValue<ScaledValue<float>> pointRadius;
   PersistentValue<std::string> material;
+  PersistentValue<bool> edgeEnabled;
   PersistentValue<glm::vec3> edgeColor;
   PersistentValue<float> edgeWidth;
 

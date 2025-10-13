@@ -31,6 +31,7 @@ PointCloud::PointCloud(std::string name, std::vector<glm::vec3> points_)
       pointColor(uniquePrefix() + "pointColor", getNextUniqueColor()),
       pointRadius(uniquePrefix() + "pointRadius", relativeValue(0.005)),
       material(uniquePrefix() + "material", "clay"),
+      edgeEnabled(uniquePrefix() + "edgeEnabled", false),
       edgeColor(uniquePrefix() + "edgeColor", glm::vec3{0., 0., 0.}),
       edgeWidth(uniquePrefix() + "edgeWidth", 0.f)
 // clang-format on
@@ -67,7 +68,9 @@ void PointCloud::setPointCloudUniforms(render::ShaderProgram& p) {
 
   // Set edge uniforms for voxel mode (always set them so shader doesn't fail)
   if (getPointRenderMode() == PointRenderMode::Voxel) {
-    p.setUniform("u_edgeWidth", getEdgeWidth() * render::engine->getCurrentPixelScaling());
+    // If edges are disabled, pass 0 for width to hide them
+    float effectiveWidth = getEdgeEnabled() ? getEdgeWidth() : 0.0f;
+    p.setUniform("u_edgeWidth", effectiveWidth * render::engine->getCurrentPixelScaling());
     p.setUniform("u_edgeColor", getEdgeColor());
   }
 }
@@ -347,17 +350,11 @@ void PointCloud::buildCustomUI() {
   // Edge options (only for voxel render mode)
   if (getPointRenderMode() == PointRenderMode::Voxel) {
     ImGui::PushItemWidth(100 * options::uiScale);
-    if (edgeWidth.get() == 0.) {
-      bool showEdges = false;
-      if (ImGui::Checkbox("Edges", &showEdges)) {
-        setEdgeWidth(1.);
-      }
-    } else {
-      bool showEdges = true;
-      if (ImGui::Checkbox("Edges", &showEdges)) {
-        setEdgeWidth(0.);
-      }
+    if (ImGui::Checkbox("Edges", &edgeEnabled.get())) {
+      setEdgeEnabled(edgeEnabled.get());
+    }
 
+    if (edgeEnabled.get()) {
       // Edge color
       ImGui::PushItemWidth(100 * options::uiScale);
       if (ImGui::ColorEdit3("Edge Color", &edgeColor.get()[0], ImGuiColorEditFlags_NoInputs))
@@ -634,6 +631,14 @@ PointCloud* PointCloud::setPointRadius(double newVal, bool isRelative) {
   return this;
 }
 double PointCloud::getPointRadius() { return pointRadius.get().asAbsolute(); }
+
+PointCloud* PointCloud::setEdgeEnabled(bool newVal) {
+  edgeEnabled = newVal;
+  refresh();
+  requestRedraw();
+  return this;
+}
+bool PointCloud::getEdgeEnabled() { return edgeEnabled.get(); }
 
 PointCloud* PointCloud::setEdgeColor(glm::vec3 val) {
   edgeColor = val;
