@@ -10,6 +10,7 @@ namespace detail {
 // clang-format off
 PersistentCache<double> persistentCache_double;
 PersistentCache<float> persistentCache_float;
+PersistentCache<int> persistentCache_int;
 PersistentCache<bool> persistentCache_bool;
 PersistentCache<std::string> persistentCache_string;
 PersistentCache<glm::vec3> persistentCache_glmvec3;

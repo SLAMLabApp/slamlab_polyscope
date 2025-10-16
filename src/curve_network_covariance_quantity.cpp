@@ -22,7 +22,9 @@ CurveNetworkNodeCovarianceQuantity::CurveNetworkNodeCovarianceQuantity(
       rotationCovariances(rotationCovariances_),
       showPositionEllipsoids(uniquePrefix() + "#showPositionEllipsoids", true),
       showRotationEllipsoids(uniquePrefix() + "#showRotationEllipsoids", true),
-      showOnlyLast(uniquePrefix() + "#showOnlyLast", false), ellipsoidScale(uniquePrefix() + "#ellipsoidScale", 1.0f),
+      showOnlyLast(uniquePrefix() + "#showOnlyLast", false),
+      showEveryNth(uniquePrefix() + "#showEveryNth", 1), // Default: show all
+      ellipsoidScale(uniquePrefix() + "#ellipsoidScale", 1.0f),
       positionEllipsoidColor(uniquePrefix() + "#positionEllipsoidColor", glm::vec3{0.6f, 0.2f, 0.8f}), // Purple
       rotationEllipsoidColor(uniquePrefix() + "#rotationEllipsoidColor", glm::vec3{1.0f, 0.9f, 0.2f}), // Yellow
       transparency(uniquePrefix() + "#transparency", 0.5f) {
@@ -40,43 +42,42 @@ void CurveNetworkNodeCovarianceQuantity::draw() {
 }
 
 void CurveNetworkNodeCovarianceQuantity::buildCustomUI() {
-  ImGui::SameLine();
+  // Show controls directly in the panel (no popup)
 
-  // == Options popup
-  if (ImGui::Button("Options")) {
-    ImGui::OpenPopup("OptionsPopup");
+  if (ImGui::Checkbox("Show Position Ellipsoids", &showPositionEllipsoids.get())) {
+    setShowPositionEllipsoids(getShowPositionEllipsoids());
   }
-  if (ImGui::BeginPopup("OptionsPopup")) {
 
-    if (ImGui::Checkbox("Show Position Ellipsoids", &showPositionEllipsoids.get())) {
-      setShowPositionEllipsoids(getShowPositionEllipsoids());
-    }
+  if (ImGui::Checkbox("Show Rotation Ellipsoids", &showRotationEllipsoids.get())) {
+    setShowRotationEllipsoids(getShowRotationEllipsoids());
+  }
 
-    if (ImGui::Checkbox("Show Rotation Ellipsoids", &showRotationEllipsoids.get())) {
-      setShowRotationEllipsoids(getShowRotationEllipsoids());
-    }
+  if (ImGui::Checkbox("Show Only Last", &showOnlyLast.get())) {
+    setShowOnlyLast(getShowOnlyLast());
+  }
 
-    if (ImGui::Checkbox("Show Only Last", &showOnlyLast.get())) {
-      setShowOnlyLast(getShowOnlyLast());
-    }
+  // Slider for showing every Nth ellipsoid (powers of 10 for easier control)
+  if (ImGui::SliderInt("Show Every Nth", &showEveryNth.get(), 1, 100, "%d")) {
+    setShowEveryNth(getShowEveryNth());
+  }
+  if (ImGui::IsItemHovered()) {
+    ImGui::SetTooltip("Show every Nth ellipsoid (1=all, 10=every 10th, etc.). Always shows the last one.");
+  }
 
-    if (ImGui::SliderFloat("Ellipsoid Scale", &ellipsoidScale.get(), 0.1f, 10.0f)) {
-      setEllipsoidScale(getEllipsoidScale());
-    }
+  if (ImGui::SliderFloat("Ellipsoid Scale", &ellipsoidScale.get(), 0.1f, 10.0f)) {
+    setEllipsoidScale(getEllipsoidScale());
+  }
 
-    if (ImGui::ColorEdit3("Position Color", &positionEllipsoidColor.get()[0])) {
-      setPositionEllipsoidColor(getPositionEllipsoidColor());
-    }
+  if (ImGui::ColorEdit3("Position Color", &positionEllipsoidColor.get()[0])) {
+    setPositionEllipsoidColor(getPositionEllipsoidColor());
+  }
 
-    if (ImGui::ColorEdit3("Rotation Color", &rotationEllipsoidColor.get()[0])) {
-      setRotationEllipsoidColor(getRotationEllipsoidColor());
-    }
+  if (ImGui::ColorEdit3("Rotation Color", &rotationEllipsoidColor.get()[0])) {
+    setRotationEllipsoidColor(getRotationEllipsoidColor());
+  }
 
-    if (ImGui::SliderFloat("Transparency", &transparency.get(), 0.0f, 1.0f)) {
-      setTransparency(getTransparency());
-    }
-
-    ImGui::EndPopup();
+  if (ImGui::SliderFloat("Transparency", &transparency.get(), 0.0f, 1.0f)) {
+    setTransparency(getTransparency());
   }
 }
 
@@ -130,6 +131,13 @@ CurveNetworkNodeCovarianceQuantity* CurveNetworkNodeCovarianceQuantity::setShowO
   return this;
 }
 bool CurveNetworkNodeCovarianceQuantity::getShowOnlyLast() { return showOnlyLast.get(); }
+
+CurveNetworkNodeCovarianceQuantity* CurveNetworkNodeCovarianceQuantity::setShowEveryNth(int val) {
+  showEveryNth = std::max(1, val); // Ensure at least 1
+  requestRedraw();
+  return this;
+}
+int CurveNetworkNodeCovarianceQuantity::getShowEveryNth() { return showEveryNth.get(); }
 
 CurveNetworkNodeCovarianceQuantity* CurveNetworkNodeCovarianceQuantity::setEllipsoidScale(float val) {
   ellipsoidScale = val;
@@ -280,10 +288,20 @@ void CurveNetworkNodeCovarianceQuantity::drawEllipsoids() {
   float scale = ellipsoidScale.get();
   float alpha = transparency.get();
 
+  // Get the "show every Nth" parameter
+  int everyNth = showEveryNth.get();
+
   // Render each ellipsoid as a transformed sphere mesh
   for (size_t i = 0; i < network.nNodes(); i++) {
     glm::vec3 nodePos = network.nodePositionsData[i];
+
+    // Check if we should draw this node based on filters
     bool shouldDrawThisNode = (i >= startIdx); // Respects "show only last" filter
+
+    // Apply "every Nth" filter, but ALWAYS show the last node
+    bool isLastNode = (i == network.nNodes() - 1);
+    bool passesNthFilter = (i % everyNth == 0) || isLastNode;
+    shouldDrawThisNode = shouldDrawThisNode && passesNthFilter;
 
     // Handle position ellipsoid
     if (i < positionCovariances.size()) {

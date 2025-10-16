@@ -40,6 +40,9 @@ public:
   CurveNetworkNodeCovarianceQuantity* setShowOnlyLast(bool val);
   bool getShowOnlyLast();
 
+  CurveNetworkNodeCovarianceQuantity* setShowEveryNth(int val);
+  int getShowEveryNth();
+
   CurveNetworkNodeCovarianceQuantity* setEllipsoidScale(float val);
   float getEllipsoidScale();
 
@@ -58,6 +61,7 @@ private:
   PersistentValue<bool> showPositionEllipsoids;
   PersistentValue<bool> showRotationEllipsoids;
   PersistentValue<bool> showOnlyLast;
+  PersistentValue<int> showEveryNth; // Show every Nth ellipsoid (1 = all, 10 = every 10th, etc.)
   PersistentValue<float> ellipsoidScale;
   PersistentValue<glm::vec3> positionEllipsoidColor;
   PersistentValue<glm::vec3> rotationEllipsoidColor;
@@ -79,7 +83,7 @@ private:
   std::vector<glm::uvec3> sphereFaces; // Triangle faces for mesh rendering
 
   // Helper functions
-  void createSphereGeometry(int subdivisions = 3);
+  void createSphereGeometry(int subdivisions = 2);
   void prepareEllipsoidGeometry();
   void drawEllipsoids();
 

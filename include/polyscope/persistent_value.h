@@ -132,6 +132,7 @@ protected:
 namespace detail {
 extern PersistentCache<double> persistentCache_double;
 extern PersistentCache<float> persistentCache_float;
+extern PersistentCache<int> persistentCache_int;
 extern PersistentCache<bool> persistentCache_bool;
 extern PersistentCache<std::string> persistentCache_string;
 extern PersistentCache<glm::vec3> persistentCache_glmvec3;
@@ -148,6 +149,7 @@ extern PersistentCache<MeshSelectionMode>   persistentCache_MeshSelectionMode;
 
 template<> inline PersistentCache<double>&                   getPersistentCacheRef<double>()                   { return persistentCache_double; }
 template<> inline PersistentCache<float>&                    getPersistentCacheRef<float>()                    { return persistentCache_float; }
+template<> inline PersistentCache<int>&                      getPersistentCacheRef<int>()                      { return persistentCache_int; }
 template<> inline PersistentCache<bool>&                     getPersistentCacheRef<bool>()                     { return persistentCache_bool; }
 template<> inline PersistentCache<std::string>&              getPersistentCacheRef<std::string>()              { return persistentCache_string; }
 template<> inline PersistentCache<glm::vec3>&                getPersistentCacheRef<glm::vec3>()                { return persistentCache_glmvec3; }
