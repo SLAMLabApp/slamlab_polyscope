@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "polyscope/curve_network_covariance_quantity.h"
+
 namespace polyscope {
 
 
@@ -265,6 +267,31 @@ CurveNetworkEdgeVectorQuantity* CurveNetwork::addEdgeVectorQuantity2D(std::strin
     v.z = 0.;
   }
   return addEdgeVectorQuantityImpl(name, vectors3D, vectorType);
+}
+
+template <class T1, class T2>
+CurveNetworkNodeCovarianceQuantity* CurveNetwork::addNodeCovarianceQuantity(std::string name,
+                                                                            const T1& positionCovariances,
+                                                                            const T2& rotationCovariances) {
+  validateSize(positionCovariances, nNodes(), "curve network node covariance quantity " + name);
+  validateSize(rotationCovariances, nNodes(), "curve network node covariance quantity " + name);
+
+  // Convert input types to std::vector<glm::mat3>
+  std::vector<glm::mat3> posCovs;
+  std::vector<glm::mat3> rotCovs;
+  posCovs.reserve(positionCovariances.size());
+  rotCovs.reserve(rotationCovariances.size());
+
+  for (const auto& cov : positionCovariances) {
+    posCovs.push_back(cov);
+  }
+  for (const auto& cov : rotationCovariances) {
+    rotCovs.push_back(cov);
+  }
+
+  CurveNetworkNodeCovarianceQuantity* q = new CurveNetworkNodeCovarianceQuantity(name, *this, posCovs, rotCovs);
+  addQuantity(q);
+  return q;
 }
 
 

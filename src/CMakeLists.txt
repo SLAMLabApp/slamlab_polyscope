@@ -210,6 +210,7 @@ set(SRCS
     curve_network_color_quantity.cpp
     curve_network_scalar_quantity.cpp
     curve_network_vector_quantity.cpp
+    curve_network_covariance_quantity.cpp
     # Volume mesh
     volume_mesh.cpp
     volume_mesh_color_quantity.cpp
@@ -270,6 +271,7 @@ set(HEADERS
     ${INCLUDE_ROOT}/curve_network.h
     ${INCLUDE_ROOT}/curve_network.ipp
     ${INCLUDE_ROOT}/curve_network_color_quantity.h
+    ${INCLUDE_ROOT}/curve_network_covariance_quantity.h
     ${INCLUDE_ROOT}/curve_network_quantity.h
     ${INCLUDE_ROOT}/curve_network_scalar_quantity.h
     ${INCLUDE_ROOT}/curve_network_vector_quantity.h

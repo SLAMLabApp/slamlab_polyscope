@@ -29,6 +29,7 @@ class CurveNetworkNodeColorQuantity;
 class CurveNetworkEdgeColorQuantity;
 class CurveNetworkNodeVectorQuantity;
 class CurveNetworkEdgeVectorQuantity;
+class CurveNetworkNodeCovarianceQuantity;
 
 
 template <> // Specialize the quantity type
@@ -44,6 +45,9 @@ struct CurveNetworkPickResult {
 
 class CurveNetwork : public QuantityStructure<CurveNetwork> {
 public:
+  // Allow covariance quantity to access node positions
+  friend class CurveNetworkNodeCovarianceQuantity;
+
   // === Member functions ===
 
   // Construct a new curve network structure
@@ -107,6 +111,12 @@ public:
   template <class T>
   CurveNetworkEdgeVectorQuantity* addEdgeVectorQuantity2D(std::string name, const T& vectors,
                                                           VectorType vectorType = VectorType::STANDARD);
+
+  // Covariances (6x6 matrices: 3 rotation + 3 position)
+  // Separate 3x3 matrices for position and rotation components
+  template <class T1, class T2>
+  CurveNetworkNodeCovarianceQuantity* addNodeCovarianceQuantity(std::string name, const T1& positionCovariances,
+                                                                const T2& rotationCovariances);
 
 
   // === Members and utilities
@@ -255,5 +265,8 @@ inline void removeCurveNetwork(std::string name = "", bool errorIfAbsent = false
 
 
 } // namespace polyscope
+
+// Include covariance quantity before .ipp so templates can instantiate it
+#include "polyscope/curve_network_covariance_quantity.h"
 
 #include "polyscope/curve_network.ipp"
