@@ -112,5 +112,117 @@ PointCloudVectorQuantity* PointCloud::addVectorQuantity2D(std::string name, cons
   return addVectorQuantityImpl(name, vectors3D, vectorType);
 }
 
+// === Covariance 6x6 API (RECOMMENDED) ===
+
+template <class T>
+PointCloudCovarianceQuantity* PointCloud::addCovariance6x6Quantity(std::string name, const T& covariances6x6) {
+  validateSize(covariances6x6, nPoints(), "point cloud covariance6x6 quantity " + name);
+
+  // Extract 3x3 blocks from 6x6 matrices
+  std::vector<glm::mat3> posCovs;
+  std::vector<glm::mat3> rotCovs;
+  std::vector<glm::mat3> poseRots;
+
+  posCovs.reserve(covariances6x6.size());
+  rotCovs.reserve(covariances6x6.size());
+  poseRots.reserve(covariances6x6.size());
+
+  for (const auto& cov6x6 : covariances6x6) {
+    posCovs.push_back(PointCloudCovarianceQuantity::extractPositionCovariance(cov6x6));
+    rotCovs.push_back(PointCloudCovarianceQuantity::extractRotationCovariance(cov6x6));
+    poseRots.push_back(glm::mat3{1.0f}); // Identity - point clouds have no orientation
+  }
+
+  PointCloudCovarianceQuantity* q = new PointCloudCovarianceQuantity(name, *this, posCovs, rotCovs, poseRots);
+  addQuantity(q);
+  return q;
+}
+
+template <class TCov, class TPose>
+PointCloudCovarianceQuantity* PointCloud::addCovariance6x6Quantity(std::string name, const TCov& covariances6x6,
+                                                                   const TPose& poseRotations) {
+  validateSize(covariances6x6, nPoints(), "point cloud covariance6x6 quantity " + name);
+  validateSize(poseRotations, nPoints(), "point cloud covariance6x6 quantity poses " + name);
+
+  // Extract 3x3 blocks from 6x6 matrices and pose rotations
+  std::vector<glm::mat3> posCovs;
+  std::vector<glm::mat3> rotCovs;
+  std::vector<glm::mat3> poseRots;
+
+  posCovs.reserve(covariances6x6.size());
+  rotCovs.reserve(covariances6x6.size());
+  poseRots.reserve(poseRotations.size());
+
+  for (const auto& cov6x6 : covariances6x6) {
+    posCovs.push_back(PointCloudCovarianceQuantity::extractPositionCovariance(cov6x6));
+    rotCovs.push_back(PointCloudCovarianceQuantity::extractRotationCovariance(cov6x6));
+  }
+
+  for (const auto& rot : poseRotations) {
+    poseRots.push_back(PointCloudCovarianceQuantity::extractPoseRotation(rot));
+  }
+
+  PointCloudCovarianceQuantity* q = new PointCloudCovarianceQuantity(name, *this, posCovs, rotCovs, poseRots);
+  addQuantity(q);
+  return q;
+}
+
+// === Advanced covariance API (3x3 blocks) ===
+
+template <class T1, class T2>
+PointCloudCovarianceQuantity* PointCloud::addCovarianceQuantity(std::string name, const T1& positionCovariances,
+                                                                const T2& rotationCovariances) {
+  validateSize(positionCovariances, nPoints(), "point cloud covariance quantity " + name);
+  validateSize(rotationCovariances, nPoints(), "point cloud covariance quantity " + name);
+
+  // Convert input types to std::vector<glm::mat3>
+  std::vector<glm::mat3> posCovs;
+  std::vector<glm::mat3> rotCovs;
+  posCovs.reserve(positionCovariances.size());
+  rotCovs.reserve(rotationCovariances.size());
+
+  for (const auto& cov : positionCovariances) {
+    posCovs.push_back(cov);
+  }
+  for (const auto& cov : rotationCovariances) {
+    rotCovs.push_back(cov);
+  }
+
+  PointCloudCovarianceQuantity* q = new PointCloudCovarianceQuantity(name, *this, posCovs, rotCovs);
+  addQuantity(q);
+  return q;
+}
+
+template <class T1, class T2, class T3>
+PointCloudCovarianceQuantity* PointCloud::addCovarianceQuantity(std::string name, const T1& positionCovariances,
+                                                                const T2& rotationCovariances,
+                                                                const T3& poseRotations) {
+  validateSize(positionCovariances, nPoints(), "point cloud covariance quantity " + name);
+  validateSize(rotationCovariances, nPoints(), "point cloud covariance quantity " + name);
+  validateSize(poseRotations, nPoints(), "point cloud covariance quantity " + name);
+
+  // Convert input types to std::vector<glm::mat3>
+  std::vector<glm::mat3> posCovs;
+  std::vector<glm::mat3> rotCovs;
+  std::vector<glm::mat3> poseRots;
+  posCovs.reserve(positionCovariances.size());
+  rotCovs.reserve(rotationCovariances.size());
+  poseRots.reserve(poseRotations.size());
+
+  for (const auto& cov : positionCovariances) {
+    posCovs.push_back(cov);
+  }
+  for (const auto& cov : rotationCovariances) {
+    rotCovs.push_back(cov);
+  }
+  for (const auto& rot : poseRotations) {
+    poseRots.push_back(rot);
+  }
+
+  PointCloudCovarianceQuantity* q = new PointCloudCovarianceQuantity(name, *this, posCovs, rotCovs, poseRots);
+  addQuantity(q);
+  return q;
+}
+
 
 } // namespace polyscope

@@ -112,11 +112,25 @@ public:
   CurveNetworkEdgeVectorQuantity* addEdgeVectorQuantity2D(std::string name, const T& vectors,
                                                           VectorType vectorType = VectorType::STANDARD);
 
-  // Covariances (6x6 matrices: 3 rotation + 3 position)
-  // Separate 3x3 matrices for position and rotation components
+  // Covariances from 6x6 matrices (RECOMMENDED API)
+  // Automatically extracts position/rotation covariances and pose orientations
+  // Convention: 6x6 = [position(0:2,0:2), cross; cross, rotation(3:5,3:5)]
+  template <class T>
+  CurveNetworkNodeCovarianceQuantity* addNodeCovariance6x6Quantity(std::string name, const T& covariances6x6);
+
+  template <class TCov, class TPose>
+  CurveNetworkNodeCovarianceQuantity* addNodeCovariance6x6Quantity(std::string name, const TCov& covariances6x6,
+                                                                   const TPose& poses);
+
+  // Advanced API: Separate 3x3 matrices for position and rotation components
   template <class T1, class T2>
   CurveNetworkNodeCovarianceQuantity* addNodeCovarianceQuantity(std::string name, const T1& positionCovariances,
                                                                 const T2& rotationCovariances);
+
+  // Advanced API: With explicit pose rotations
+  template <class T1, class T2, class T3>
+  CurveNetworkNodeCovarianceQuantity* addNodeCovarianceQuantity(std::string name, const T1& positionCovariances,
+                                                                const T2& rotationCovariances, const T3& poseRotations);
 
 
   // === Members and utilities

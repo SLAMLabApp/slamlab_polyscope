@@ -269,6 +269,66 @@ CurveNetworkEdgeVectorQuantity* CurveNetwork::addEdgeVectorQuantity2D(std::strin
   return addEdgeVectorQuantityImpl(name, vectors3D, vectorType);
 }
 
+// === Covariance 6x6 API (RECOMMENDED) ===
+
+template <class T>
+CurveNetworkNodeCovarianceQuantity* CurveNetwork::addNodeCovariance6x6Quantity(std::string name,
+                                                                               const T& covariances6x6) {
+  validateSize(covariances6x6, nNodes(), "curve network node covariance6x6 quantity " + name);
+
+  // Extract 3x3 blocks from 6x6 matrices
+  std::vector<glm::mat3> posCovs;
+  std::vector<glm::mat3> rotCovs;
+  std::vector<glm::mat3> poseRots;
+
+  posCovs.reserve(covariances6x6.size());
+  rotCovs.reserve(covariances6x6.size());
+  poseRots.reserve(covariances6x6.size());
+
+  for (const auto& cov6x6 : covariances6x6) {
+    posCovs.push_back(CurveNetworkNodeCovarianceQuantity::extractPositionCovariance(cov6x6));
+    rotCovs.push_back(CurveNetworkNodeCovarianceQuantity::extractRotationCovariance(cov6x6));
+    poseRots.push_back(glm::mat3{1.0f}); // Identity - covariances assumed in world frame
+  }
+
+  CurveNetworkNodeCovarianceQuantity* q =
+      new CurveNetworkNodeCovarianceQuantity(name, *this, posCovs, rotCovs, poseRots);
+  addQuantity(q);
+  return q;
+}
+
+template <class TCov, class TPose>
+CurveNetworkNodeCovarianceQuantity*
+CurveNetwork::addNodeCovariance6x6Quantity(std::string name, const TCov& covariances6x6, const TPose& poses) {
+  validateSize(covariances6x6, nNodes(), "curve network node covariance6x6 quantity " + name);
+  validateSize(poses, nNodes(), "curve network node covariance6x6 quantity poses " + name);
+
+  // Extract 3x3 blocks from 6x6 matrices and pose rotations
+  std::vector<glm::mat3> posCovs;
+  std::vector<glm::mat3> rotCovs;
+  std::vector<glm::mat3> poseRots;
+
+  posCovs.reserve(covariances6x6.size());
+  rotCovs.reserve(covariances6x6.size());
+  poseRots.reserve(poses.size());
+
+  for (const auto& cov6x6 : covariances6x6) {
+    posCovs.push_back(CurveNetworkNodeCovarianceQuantity::extractPositionCovariance(cov6x6));
+    rotCovs.push_back(CurveNetworkNodeCovarianceQuantity::extractRotationCovariance(cov6x6));
+  }
+
+  for (const auto& pose : poses) {
+    poseRots.push_back(CurveNetworkNodeCovarianceQuantity::extractPoseRotation(pose));
+  }
+
+  CurveNetworkNodeCovarianceQuantity* q =
+      new CurveNetworkNodeCovarianceQuantity(name, *this, posCovs, rotCovs, poseRots);
+  addQuantity(q);
+  return q;
+}
+
+// === Advanced covariance API (3x3 blocks) ===
+
 template <class T1, class T2>
 CurveNetworkNodeCovarianceQuantity* CurveNetwork::addNodeCovarianceQuantity(std::string name,
                                                                             const T1& positionCovariances,
@@ -290,6 +350,37 @@ CurveNetworkNodeCovarianceQuantity* CurveNetwork::addNodeCovarianceQuantity(std:
   }
 
   CurveNetworkNodeCovarianceQuantity* q = new CurveNetworkNodeCovarianceQuantity(name, *this, posCovs, rotCovs);
+  addQuantity(q);
+  return q;
+}
+
+template <class T1, class T2, class T3>
+CurveNetworkNodeCovarianceQuantity*
+CurveNetwork::addNodeCovarianceQuantity(std::string name, const T1& positionCovariances, const T2& rotationCovariances,
+                                        const T3& poseRotations) {
+  validateSize(positionCovariances, nNodes(), "curve network node covariance quantity " + name);
+  validateSize(rotationCovariances, nNodes(), "curve network node covariance quantity " + name);
+
+  // Convert input types to std::vector<glm::mat3>
+  std::vector<glm::mat3> posCovs;
+  std::vector<glm::mat3> rotCovs;
+  std::vector<glm::mat3> poseRots;
+  posCovs.reserve(positionCovariances.size());
+  rotCovs.reserve(rotationCovariances.size());
+  poseRots.reserve(poseRotations.size());
+
+  for (const auto& cov : positionCovariances) {
+    posCovs.push_back(cov);
+  }
+  for (const auto& cov : rotationCovariances) {
+    rotCovs.push_back(cov);
+  }
+  for (const auto& rot : poseRotations) {
+    poseRots.push_back(rot);
+  }
+
+  CurveNetworkNodeCovarianceQuantity* q =
+      new CurveNetworkNodeCovarianceQuantity(name, *this, posCovs, rotCovs, poseRots);
   addQuantity(q);
   return q;
 }

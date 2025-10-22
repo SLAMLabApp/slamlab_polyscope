@@ -15,6 +15,7 @@
 #include "polyscope/structure.h"
 
 #include "polyscope/point_cloud_color_quantity.h"
+#include "polyscope/point_cloud_covariance_quantity.h"
 #include "polyscope/point_cloud_parameterization_quantity.h"
 #include "polyscope/point_cloud_scalar_quantity.h"
 #include "polyscope/point_cloud_vector_quantity.h"
@@ -31,6 +32,7 @@ class PointCloudColorQuantity;
 class PointCloudScalarQuantity;
 class PointCloudParameterizationQuantity;
 class PointCloudVectorQuantity;
+class PointCloudCovarianceQuantity;
 
 
 template <> // Specialize the quantity type
@@ -93,6 +95,25 @@ public:
   template <class T>
   PointCloudVectorQuantity* addVectorQuantity2D(std::string name, const T& vectors,
                                                 VectorType vectorType = VectorType::STANDARD);
+
+  // Covariances from 6x6 matrices (RECOMMENDED API)
+  // Automatically extracts position/rotation covariances
+  // Convention: 6x6 = [position(0:2,0:2), cross; cross, rotation(3:5,3:5)]
+  // For point clouds, pose rotations default to identity (no orientation)
+  template <class T>
+  PointCloudCovarianceQuantity* addCovariance6x6Quantity(std::string name, const T& covariances6x6);
+
+  template <class TCov, class TPose>
+  PointCloudCovarianceQuantity* addCovariance6x6Quantity(std::string name, const TCov& covariances6x6,
+                                                         const TPose& poseRotations);
+
+  // Advanced API: Separate 3x3 matrices for position and rotation components
+  template <class T1, class T2>
+  PointCloudCovarianceQuantity* addCovarianceQuantity(std::string name, const T1& positionCovariances,
+                                                      const T2& rotationCovariances);
+  template <class T1, class T2, class T3>
+  PointCloudCovarianceQuantity* addCovarianceQuantity(std::string name, const T1& positionCovariances,
+                                                      const T2& rotationCovariances, const T3& poseRotations);
 
   // === Mutate
   template <class V>

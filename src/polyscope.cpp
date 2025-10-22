@@ -901,6 +901,27 @@ void buildStructureGui() {
 
     std::map<std::string, std::unique_ptr<Structure>>& structureMap = catMapEntry.second;
 
+    // Skip rendering "Simple Triangle Mesh" category if all meshes are covariance ellipsoids OR if empty
+    // This prevents clutter in the structure list from covariance visualizations
+    if (catName == "Simple Triangle Mesh") {
+      // Skip if the category is empty (no meshes at all)
+      if (structureMap.empty()) {
+        continue;
+      }
+
+      // Also skip if all meshes are ellipsoids (covariance visualizations)
+      bool allAreEllipsoids = true;
+      for (const auto& structEntry : structureMap) {
+        if (structEntry.first.find("ellipsoid") == std::string::npos) {
+          allAreEllipsoids = false;
+          break;
+        }
+      }
+      if (allAreEllipsoids) {
+        continue; // Skip this entire category
+      }
+    }
+
     ImGui::PushID(catName.c_str()); // ensure there are no conflicts with
                                     // identically-named labels
 

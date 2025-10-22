@@ -199,6 +199,7 @@ set(SRCS
     point_cloud_scalar_quantity.cpp
     point_cloud_vector_quantity.cpp
     point_cloud_parameterization_quantity.cpp
+    point_cloud_covariance_quantity.cpp
     # Surface
     surface_mesh.cpp
     surface_color_quantity.cpp
