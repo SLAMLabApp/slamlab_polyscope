@@ -27,6 +27,7 @@ namespace polyscope {
 class Structure;
 class Group;
 class SlicePlane;
+class SliceProfile;
 class Widget;
 class FloatingQuantityStructure;
 namespace view {
@@ -60,6 +61,7 @@ struct Context {
   std::tuple<glm::vec3, glm::vec3> boundingBox =
       std::tuple<glm::vec3, glm::vec3>{glm::vec3{-1., -1., -1.}, glm::vec3{1., 1., 1.}};
   std::vector<std::unique_ptr<SlicePlane>> slicePlanes;
+  std::vector<std::unique_ptr<SliceProfile>> sliceProfiles;
   std::vector<WeakHandle<Widget>> widgets;
   bool doDefaultMouseInteraction = true;
   std::function<void()> userCallback = nullptr;

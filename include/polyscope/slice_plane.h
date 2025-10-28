@@ -74,6 +74,10 @@ public:
   void setVolumeMeshToInspect(std::string meshName);
   std::string getVolumeMeshToInspect();
 
+  // Control GUI visibility
+  void setHideFromGUI(bool hide) { hideFromGUI = hide; }
+  bool getHideFromGUI() const { return hideFromGUI; }
+
 protected:
   // = State
   PersistentValue<bool> active;     // is it actually slicing?
@@ -88,6 +92,9 @@ protected:
   // slicing
   bool shouldInspectMesh;
   std::string inspectedMeshName;
+
+  // Flag to hide this plane from the GUI (used when plane is controlled by a profile)
+  bool hideFromGUI;
 
   std::shared_ptr<render::ShaderProgram> volumeInspectProgram;
 
@@ -109,9 +116,88 @@ protected:
   void updateWidgetEnabled();
 };
 
+
+// SliceProfile manages two parallel slice planes that move and rotate together
+class SliceProfile : public Widget {
+
+public:
+  // == Constructors
+  SliceProfile(std::string name);
+  ~SliceProfile();
+
+  // No copy constructor/assignment
+  SliceProfile(const SliceProfile&) = delete;
+  SliceProfile& operator=(const SliceProfile&) = delete;
+
+  void buildGUI();
+  void draw();
+  void drawGeometry();
+
+  const std::string name;
+  const std::string postfix;
+  std::string uniquePrefix();
+
+  // Set the position and orientation of the profile (both planes)
+  void setPose(glm::vec3 centerPosition, glm::vec3 planeNormal);
+
+  // == Getters and setters
+  bool getActive();
+  void setActive(bool newVal);
+
+  bool getDrawPlanes();
+  void setDrawPlanes(bool newVal);
+
+  bool getDrawWidget();
+  void setDrawWidget(bool newVal);
+
+  glm::mat4 getTransform();
+  void setTransform(glm::mat4 newTransform);
+
+  void setColor(glm::vec3 newVal);
+  glm::vec3 getColor();
+
+  void setTransparency(double newVal);
+  double getTransparency();
+
+  void setDistance(float newVal);
+  float getDistance();
+
+  // Access to the two planes (front and back)
+  SlicePlane* getFrontPlane() { return frontPlane; }
+  SlicePlane* getBackPlane() { return backPlane; }
+
+protected:
+  // = State
+  PersistentValue<bool> active;
+  PersistentValue<bool> drawPlanes;
+  PersistentValue<bool> drawWidget;
+  PersistentValue<glm::mat4> objectTransform;
+  PersistentValue<glm::vec3> color;
+  PersistentValue<float> transparency;
+  PersistentValue<float> distance; // distance between the two planes
+
+  // The two parallel planes
+  SlicePlane* frontPlane;
+  SlicePlane* backPlane;
+
+  // Widget that wraps the transform
+  TransformationGizmo transformGizmo;
+
+  // Helpers
+  void updatePlanes();
+  void prepare();
+  glm::vec3 getCenter();
+  glm::vec3 getNormal();
+  void updateWidgetEnabled();
+};
+
+
 SlicePlane* addSceneSlicePlane(bool initiallyVisible = false);
 void removeLastSceneSlicePlane();
 void removeAllSlicePlanes();
+SliceProfile* addSceneSliceProfile(bool initiallyVisible = true);
+void removeLastSceneSliceProfile();
+void removeAllSliceProfiles();
 void buildSlicePlaneGUI();
 
 // flag to open the slice plane menu after adding a slice plane

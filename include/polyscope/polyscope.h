@@ -98,6 +98,9 @@ extern std::tuple<glm::vec3, glm::vec3>& boundingBox;
 // list of all slice planes in the scene
 extern std::vector<std::unique_ptr<SlicePlane>>& slicePlanes;
 
+// list of all slice profiles in the scene
+extern std::vector<std::unique_ptr<SliceProfile>>& sliceProfiles;
+
 // list of all widgets in the scene (the memory is NOT owned here, they're just refs)
 extern std::vector<WeakHandle<Widget>>& widgets;
 

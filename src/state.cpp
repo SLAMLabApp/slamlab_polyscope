@@ -17,6 +17,7 @@ std::map<std::string, std::unique_ptr<Group>>& groups = globalContext.groups;
 float& lengthScale = globalContext.lengthScale;
 std::tuple<glm::vec3, glm::vec3>& boundingBox = globalContext.boundingBox;
 std::vector<std::unique_ptr<SlicePlane>>& slicePlanes = globalContext.slicePlanes;
+std::vector<std::unique_ptr<SliceProfile>>& sliceProfiles = globalContext.sliceProfiles;
 std::vector<WeakHandle<Widget>>& widgets = globalContext.widgets;
 bool& doDefaultMouseInteraction = globalContext.doDefaultMouseInteraction;
 std::function<void()>& userCallback = globalContext.userCallback;

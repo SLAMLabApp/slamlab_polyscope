@@ -31,15 +31,38 @@ SlicePlane* addSceneSlicePlane(bool initiallyVisible) {
 
 void removeLastSceneSlicePlane() {
   if (state::slicePlanes.empty()) return;
-  state::slicePlanes.pop_back();
-  for (std::unique_ptr<SlicePlane>& s : state::slicePlanes) {
-    s->resetVolumeSliceProgram();
+
+  // Find the last non-hidden plane (standalone plane, not owned by a profile)
+  for (auto it = state::slicePlanes.rbegin(); it != state::slicePlanes.rend(); ++it) {
+    if (!(*it)->getHideFromGUI()) {
+      // Found a standalone plane, remove it
+      state::slicePlanes.erase(std::next(it).base());
+
+      // Reset volume slice programs for remaining planes
+      for (std::unique_ptr<SlicePlane>& s : state::slicePlanes) {
+        s->resetVolumeSliceProgram();
+      }
+      return;
+    }
   }
+
+  // If no visible planes found, don't remove anything
 }
 
 void removeAllSlicePlanes() {
+  // IMPORTANT: Remove all profiles FIRST before removing planes
+  // This ensures proper cleanup order
+  removeAllSliceProfiles();
+
+  // Now remove any remaining standalone planes
   while (!state::slicePlanes.empty()) {
     removeLastSceneSlicePlane();
+  }
+}
+
+void removeAllSliceProfiles() {
+  while (!state::sliceProfiles.empty()) {
+    removeLastSceneSliceProfile();
   }
 }
 
@@ -56,12 +79,45 @@ void buildSlicePlaneGUI() {
       addSceneSlicePlane(true);
     }
     ImGui::SameLine();
-    if (ImGui::Button("Remove plane")) {
-      removeLastSceneSlicePlane();
+    if (ImGui::Button("Add profile")) {
+      addSceneSliceProfile(true);
     }
+    ImGui::SameLine();
+    if (ImGui::Button("Remove")) {
+      ImGui::OpenPopup("RemovePopup");
+    }
+
+    // Popup for choosing what to remove
+    if (ImGui::BeginPopup("RemovePopup")) {
+      // Count non-hidden planes (standalone planes not owned by profiles)
+      int visiblePlaneCount = 0;
+      for (const auto& s : state::slicePlanes) {
+        if (!s->getHideFromGUI()) {
+          visiblePlaneCount++;
+        }
+      }
+
+      if (visiblePlaneCount > 0 && ImGui::MenuItem("Remove last plane")) {
+        removeLastSceneSlicePlane();
+      }
+      if (!state::sliceProfiles.empty() && ImGui::MenuItem("Remove last profile")) {
+        removeLastSceneSliceProfile();
+      }
+      ImGui::EndPopup();
+    }
+
+    // Display all slice planes
     for (std::unique_ptr<SlicePlane>& s : state::slicePlanes) {
-      s->buildGUI();
+      if (!s->getHideFromGUI()) {
+        s->buildGUI();
+      }
     }
+
+    // Display all slice profiles
+    for (std::unique_ptr<SliceProfile>& p : state::sliceProfiles) {
+      p->buildGUI();
+    }
+
     ImGui::TreePop();
   }
 }
@@ -74,7 +130,7 @@ SlicePlane::SlicePlane(std::string name_)
       color(uniquePrefix() + "#color", getNextUniqueColor()),
       gridLineColor(uniquePrefix() + "#gridLineColor", glm::vec3{.97, .97, .97}),
       transparency(uniquePrefix() + "#transparency", 0.5), shouldInspectMesh(false), inspectedMeshName(""),
-      transformGizmo(uniquePrefix() + "#transformGizmo", objectTransform.get(), &objectTransform),
+      hideFromGUI(false), transformGizmo(uniquePrefix() + "#transformGizmo", objectTransform.get(), &objectTransform),
       sliceBufferArr{{{nullptr, uniquePrefix() + "#slice1", sliceBufferDataArr[0]},
                       {nullptr, uniquePrefix() + "#slice2", sliceBufferDataArr[1]},
                       {nullptr, uniquePrefix() + "#slice3", sliceBufferDataArr[2]},
@@ -449,5 +505,282 @@ void SlicePlane::setTransparency(double newVal) {
   requestRedraw();
 }
 double SlicePlane::getTransparency() { return transparency.get(); }
+
+
+// ============================================================
+// ============== SliceProfile Implementation =================
+// ============================================================
+
+SliceProfile::SliceProfile(std::string name_)
+    : Widget(), // Call base Widget constructor
+      name(name_), postfix(std::to_string(state::sliceProfiles.size())), active(uniquePrefix() + "#active", true),
+      drawPlanes(uniquePrefix() + "#drawPlanes", true), drawWidget(uniquePrefix() + "#drawWidget", true),
+      objectTransform(uniquePrefix() + "#object_transform", glm::mat4(1.0)),
+      color(uniquePrefix() + "#color", getNextUniqueColor()), transparency(uniquePrefix() + "#transparency", 0.5),
+      distance(uniquePrefix() + "#distance", 1.0),
+      transformGizmo(uniquePrefix() + "#transformGizmo", objectTransform.get(), &objectTransform), frontPlane(nullptr),
+      backPlane(nullptr) {
+
+  // Enable the transformation gizmo
+  updateWidgetEnabled();
+
+  // Create the two slice planes (they will be hidden and controlled by this profile)
+  frontPlane = addSceneSlicePlane(false);
+  backPlane = addSceneSlicePlane(false);
+
+  // Disable their individual widgets since we control them
+  frontPlane->setDrawWidget(false);
+  backPlane->setDrawWidget(false);
+
+  // Hide them from the GUI since they're controlled by this profile
+  frontPlane->setHideFromGUI(true);
+  backPlane->setHideFromGUI(true);
+
+  prepare();
+}
+
+SliceProfile::~SliceProfile() {
+  // Disable the transformation gizmo immediately
+  transformGizmo.enabled = false;
+
+  // Disable widget drawing
+  drawWidget = false;
+  drawPlanes = false;
+
+  // Null out plane pointers to avoid dangling references
+  // Note: The actual plane cleanup happens in removeLastSceneSliceProfile()
+  frontPlane = nullptr;
+  backPlane = nullptr;
+}
+
+std::string SliceProfile::uniquePrefix() { return "SliceProfile#" + name + "#"; }
+
+void SliceProfile::prepare() { updatePlanes(); }
+
+void SliceProfile::updatePlanes() {
+  if (!frontPlane || !backPlane) return;
+
+  glm::vec3 center = getCenter();
+  glm::vec3 normal = getNormal();
+  float halfDist = distance.get() * 0.5f;
+
+  // SLAB LOGIC: Both plane normals point INWARD (toward the center)
+  // This way each plane culls points AWAY from the slab
+
+  // Front plane: at center + normal*halfDist
+  // Normal points INWARD (-normal) to cull points beyond
+  // Culls: dot(point - frontPos, -N) < 0 => dot(point - C, N) > -d/2
+  glm::vec3 frontPos = center + normal * halfDist;
+  frontPlane->setPose(frontPos, -normal);
+  frontPlane->setActive(active.get());
+  frontPlane->setDrawPlane(drawPlanes.get());
+  frontPlane->setColor(color.get());
+  frontPlane->setTransparency(transparency.get());
+
+  // Back plane: at center - normal*halfDist
+  // Normal points INWARD (+normal) to cull points beyond
+  // Culls: dot(point - backPos, N) < 0 => dot(point - C, N) < -d/2
+  // Combined: keeps -d/2 < dot(point - C, N) < d/2 ✓
+  glm::vec3 backPos = center - normal * halfDist;
+  backPlane->setPose(backPos, normal);
+  backPlane->setActive(active.get());
+  backPlane->setDrawPlane(drawPlanes.get());
+  backPlane->setColor(color.get());
+  backPlane->setTransparency(transparency.get());
+}
+
+void SliceProfile::buildGUI() {
+  ImGui::PushID(name.c_str());
+
+  if (ImGui::Checkbox(name.c_str(), &active.get())) {
+    setActive(getActive());
+  }
+
+  ImGui::SameLine();
+
+  { // Color transparency box
+    glm::vec3 colorBefore = getColor();
+    float transparencyBefore = getTransparency();
+    std::array<float, 4> colorArray{colorBefore.x, colorBefore.y, colorBefore.z, transparencyBefore};
+    if (ImGui::ColorEdit4("##color and trans", &colorArray[0], ImGuiColorEditFlags_NoInputs)) {
+      if (colorArray[0] != colorBefore[0] || colorArray[1] != colorBefore[1] || colorArray[2] != colorBefore[2]) {
+        setColor(glm::vec3{colorArray[0], colorArray[1], colorArray[2]});
+      }
+      if (colorArray[3] != transparencyBefore) {
+        setTransparency(colorArray[3]);
+      }
+    }
+  }
+
+  ImGui::Indent(16.);
+
+  if (ImGui::Checkbox("draw planes", &drawPlanes.get())) {
+    setDrawPlanes(getDrawPlanes());
+  }
+  ImGui::SameLine();
+  if (ImGui::Checkbox("draw widget", &drawWidget.get())) {
+    setDrawWidget(getDrawWidget());
+  }
+
+  // Distance slider
+  float dist = distance.get();
+  if (ImGui::SliderFloat("distance", &dist, 0.01f, 10.0f * state::lengthScale)) {
+    setDistance(dist);
+  }
+
+  ImGui::Unindent(16.);
+  ImGui::PopID();
+}
+
+void SliceProfile::draw() {
+  // Safety check: don't update if planes have been destroyed
+  if (!frontPlane || !backPlane) return;
+
+  // Always update planes when gizmo is manipulated
+  // The planes themselves will check if they're active
+  updatePlanes();
+}
+
+void SliceProfile::drawGeometry() {
+  if (!active.get()) return;
+
+  // The planes handle their own geometry drawing
+  // The profile just coordinates them
+}
+
+glm::vec3 SliceProfile::getCenter() {
+  glm::vec3 center{objectTransform.get()[3][0], objectTransform.get()[3][1], objectTransform.get()[3][2]};
+  return center;
+}
+
+glm::vec3 SliceProfile::getNormal() {
+  glm::vec3 normal{objectTransform.get()[0][0], objectTransform.get()[0][1], objectTransform.get()[0][2]};
+  normal = glm::normalize(normal);
+  return normal;
+}
+
+void SliceProfile::updateWidgetEnabled() {
+  bool enabled = getActive() && getDrawWidget();
+  transformGizmo.enabled = enabled;
+}
+
+void SliceProfile::setPose(glm::vec3 centerPosition, glm::vec3 planeNormal) {
+  // Similar to SlicePlane::setPose but for the center point
+  glm::vec3 currBasisX{objectTransform.get()[1][0], objectTransform.get()[1][1], objectTransform.get()[1][2]};
+  glm::vec3 currBasisY{objectTransform.get()[2][0], objectTransform.get()[2][1], objectTransform.get()[2][2]};
+
+  glm::vec3 normal = glm::normalize(planeNormal);
+  glm::vec3 basisX = currBasisX - normal * glm::dot(normal, currBasisX);
+  if (glm::length(basisX) < 0.01) basisX = currBasisY - normal * glm::dot(normal, currBasisY);
+  basisX = glm::normalize(basisX);
+  glm::vec3 basisY = glm::cross(normal, basisX);
+
+  glm::mat4x4 newTransform = glm::mat4x4(1.0);
+  for (int i = 0; i < 3; i++) newTransform[0][i] = normal[i];
+  for (int i = 0; i < 3; i++) newTransform[1][i] = basisX[i];
+  for (int i = 0; i < 3; i++) newTransform[2][i] = basisY[i];
+  for (int i = 0; i < 3; i++) newTransform[3][i] = centerPosition[i];
+
+  objectTransform = newTransform;
+  updatePlanes();
+  polyscope::requestRedraw();
+}
+
+bool SliceProfile::getActive() { return active.get(); }
+void SliceProfile::setActive(bool newVal) {
+  active = newVal;
+  updateWidgetEnabled();
+  updatePlanes();
+  polyscope::requestRedraw();
+}
+
+bool SliceProfile::getDrawPlanes() { return drawPlanes.get(); }
+void SliceProfile::setDrawPlanes(bool newVal) {
+  drawPlanes = newVal;
+  updatePlanes();
+  polyscope::requestRedraw();
+}
+
+bool SliceProfile::getDrawWidget() { return drawWidget.get(); }
+void SliceProfile::setDrawWidget(bool newVal) {
+  drawWidget = newVal;
+  updateWidgetEnabled();
+  polyscope::requestRedraw();
+}
+
+glm::mat4 SliceProfile::getTransform() { return objectTransform.get(); }
+void SliceProfile::setTransform(glm::mat4 newTransform) {
+  objectTransform = newTransform;
+  updatePlanes();
+  polyscope::requestRedraw();
+}
+
+void SliceProfile::setColor(glm::vec3 newVal) {
+  color = newVal;
+  updatePlanes();
+  polyscope::requestRedraw();
+}
+glm::vec3 SliceProfile::getColor() { return color.get(); }
+
+void SliceProfile::setTransparency(double newVal) {
+  transparency = newVal;
+  updatePlanes();
+  polyscope::requestRedraw();
+}
+double SliceProfile::getTransparency() { return transparency.get(); }
+
+void SliceProfile::setDistance(float newVal) {
+  distance = newVal;
+  updatePlanes();
+  polyscope::requestRedraw();
+}
+float SliceProfile::getDistance() { return distance.get(); }
+
+SliceProfile* addSceneSliceProfile(bool initiallyVisible) {
+  size_t nProfiles = state::sliceProfiles.size();
+  std::string newName = "Scene Slice Profile " + std::to_string(nProfiles);
+  state::sliceProfiles.emplace_back(std::unique_ptr<SliceProfile>(new SliceProfile(newName)));
+  nProfiles++;
+  SliceProfile* newProfile = state::sliceProfiles.back().get();
+  if (!initiallyVisible) {
+    newProfile->setDrawPlanes(false);
+    newProfile->setDrawWidget(false);
+  }
+  return newProfile;
+}
+
+void removeLastSceneSliceProfile() {
+  if (state::sliceProfiles.empty()) return;
+
+  // Get the profile we're about to remove
+  SliceProfile* profile = state::sliceProfiles.back().get();
+
+  // Get the plane pointers while the profile still exists
+  SlicePlane* frontPlane = profile->getFrontPlane();
+  SlicePlane* backPlane = profile->getBackPlane();
+
+  // Find the indices of these planes in state::slicePlanes
+  // We need to do this BEFORE removing the profile
+  std::vector<size_t> planeIndicesToRemove;
+  for (size_t i = 0; i < state::slicePlanes.size(); ++i) {
+    SlicePlane* p = state::slicePlanes[i].get();
+    if (p == frontPlane || p == backPlane) {
+      planeIndicesToRemove.push_back(i);
+    }
+  }
+
+  // Now remove the profile (this destroys the SliceProfile object)
+  state::sliceProfiles.pop_back();
+
+  // Remove the planes by index (in reverse order to maintain indices)
+  for (auto it = planeIndicesToRemove.rbegin(); it != planeIndicesToRemove.rend(); ++it) {
+    state::slicePlanes.erase(state::slicePlanes.begin() + *it);
+  }
+
+  // Reset volume slice programs for remaining planes
+  for (std::unique_ptr<SlicePlane>& s : state::slicePlanes) {
+    s->resetVolumeSliceProgram();
+  }
+}
 
 } // namespace polyscope
