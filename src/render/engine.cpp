@@ -356,7 +356,7 @@ void Engine::buildEngineGui() {
         options::ssaaFactor = ssaaFactor;
         requestRedraw();
       }
-      
+
       if (ImGui::InputFloat("UI Scale", &options::uiScale, 0.25f)) {
         options::uiScale = std::min(options::uiScale, 4.f);
         options::uiScale = std::max(options::uiScale, 0.25f);
@@ -1134,6 +1134,8 @@ void Engine::loadDefaultColorMap(std::string name) {
     buff = &CM_HSV;
   } else if (name == "signal") {
     buff = &CM_SIGNAL;
+  } else if (name == "rviz_rainbow") {
+    buff = &CM_RVIZ_RAINBOW;
   } else {
     exception("unrecognized default colormap " + name);
   }
@@ -1161,6 +1163,7 @@ void Engine::loadDefaultColorMaps() {
   loadDefaultColorMap("turbo");
   loadDefaultColorMap("hsv");
   loadDefaultColorMap("signal");
+  loadDefaultColorMap("rviz_rainbow");
 }
 
 
