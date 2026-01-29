@@ -33,14 +33,14 @@ CovarianceQuantityBase<DerivedQuantity, ParentStructure>::CovarianceQuantityBase
 template <typename DerivedQuantity, typename ParentStructure>
 template <typename Mat6x6>
 glm::mat3 CovarianceQuantityBase<DerivedQuantity, ParentStructure>::extractPositionCovariance(const Mat6x6& cov6x6) {
-  // Extract position covariance (top-left 3x3 of 6x6)
-  // Convention: indices 0-2 are x, y, z position
+  // Extract position covariance (bottom-right 3x3 of 6x6)
+  // Convention: indices 3-5 are x, y, z position
   // GLM uses column-major: glm::mat3[col][row]
   // Assumes Eigen-style operator() access: (row, col)
   glm::mat3 posCov{0.0f};
   for (int row{}; row < 3; ++row) {
     for (int col{}; col < 3; ++col) {
-      posCov[col][row] = cov6x6(row, col);
+      posCov[col][row] = cov6x6(row + 3, col + 3);
     }
   }
   return posCov;
@@ -49,13 +49,13 @@ glm::mat3 CovarianceQuantityBase<DerivedQuantity, ParentStructure>::extractPosit
 template <typename DerivedQuantity, typename ParentStructure>
 template <typename Mat6x6>
 glm::mat3 CovarianceQuantityBase<DerivedQuantity, ParentStructure>::extractRotationCovariance(const Mat6x6& cov6x6) {
-  // Extract rotation covariance (bottom-right 3x3 of 6x6)
-  // Convention: indices 3-5 are roll, pitch, yaw rotations
+  // Extract rotation covariance (top-left 3x3 of 6x6)
+  // Convention: indices 0-2 are roll, pitch, yaw rotations
   // Assumes Eigen-style operator() access: (row, col)
   glm::mat3 rotCov{0.0f};
   for (int row{}; row < 3; ++row) {
     for (int col{}; col < 3; ++col) {
-      rotCov[col][row] = cov6x6(row + 3, col + 3);
+      rotCov[col][row] = cov6x6(row, col);
     }
   }
   return rotCov;
