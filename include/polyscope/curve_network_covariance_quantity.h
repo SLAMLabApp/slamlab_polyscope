@@ -45,8 +45,10 @@ public:
   using CovarianceQuantityBase<CurveNetworkNodeCovarianceQuantity, CurveNetwork>::getShowOnlyLast;
   using CovarianceQuantityBase<CurveNetworkNodeCovarianceQuantity, CurveNetwork>::setShowEveryNth;
   using CovarianceQuantityBase<CurveNetworkNodeCovarianceQuantity, CurveNetwork>::getShowEveryNth;
-  using CovarianceQuantityBase<CurveNetworkNodeCovarianceQuantity, CurveNetwork>::setEllipsoidScale;
-  using CovarianceQuantityBase<CurveNetworkNodeCovarianceQuantity, CurveNetwork>::getEllipsoidScale;
+  using CovarianceQuantityBase<CurveNetworkNodeCovarianceQuantity, CurveNetwork>::setPositionScale;
+  using CovarianceQuantityBase<CurveNetworkNodeCovarianceQuantity, CurveNetwork>::getPositionScale;
+  using CovarianceQuantityBase<CurveNetworkNodeCovarianceQuantity, CurveNetwork>::setRotationScale;
+  using CovarianceQuantityBase<CurveNetworkNodeCovarianceQuantity, CurveNetwork>::getRotationScale;
   using CovarianceQuantityBase<CurveNetworkNodeCovarianceQuantity, CurveNetwork>::setPositionEllipsoidColor;
   using CovarianceQuantityBase<CurveNetworkNodeCovarianceQuantity, CurveNetwork>::getPositionEllipsoidColor;
   using CovarianceQuantityBase<CurveNetworkNodeCovarianceQuantity, CurveNetwork>::setRotationEllipsoidColor;

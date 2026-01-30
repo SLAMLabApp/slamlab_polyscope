@@ -43,8 +43,10 @@ public:
   using CovarianceQuantityBase<PointCloudCovarianceQuantity, PointCloud>::getShowOnlyLast;
   using CovarianceQuantityBase<PointCloudCovarianceQuantity, PointCloud>::setShowEveryNth;
   using CovarianceQuantityBase<PointCloudCovarianceQuantity, PointCloud>::getShowEveryNth;
-  using CovarianceQuantityBase<PointCloudCovarianceQuantity, PointCloud>::setEllipsoidScale;
-  using CovarianceQuantityBase<PointCloudCovarianceQuantity, PointCloud>::getEllipsoidScale;
+  using CovarianceQuantityBase<PointCloudCovarianceQuantity, PointCloud>::setPositionScale;
+  using CovarianceQuantityBase<PointCloudCovarianceQuantity, PointCloud>::getPositionScale;
+  using CovarianceQuantityBase<PointCloudCovarianceQuantity, PointCloud>::setRotationScale;
+  using CovarianceQuantityBase<PointCloudCovarianceQuantity, PointCloud>::getRotationScale;
   using CovarianceQuantityBase<PointCloudCovarianceQuantity, PointCloud>::setPositionEllipsoidColor;
   using CovarianceQuantityBase<PointCloudCovarianceQuantity, PointCloud>::getPositionEllipsoidColor;
   using CovarianceQuantityBase<PointCloudCovarianceQuantity, PointCloud>::setRotationEllipsoidColor;

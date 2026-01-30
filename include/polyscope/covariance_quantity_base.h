@@ -29,7 +29,8 @@ protected:
   PersistentValue<bool> showRotationEllipsoids;
   PersistentValue<bool> showOnlyLast;
   PersistentValue<int> showEveryNth;
-  PersistentValue<float> ellipsoidScale;
+  PersistentValue<float> positionScale;
+  PersistentValue<float> rotationScale;
   PersistentValue<glm::vec3> positionEllipsoidColor;
   PersistentValue<glm::vec3> rotationEllipsoidColor;
   PersistentValue<float> transparency;
@@ -96,8 +97,11 @@ public:
   DerivedQuantity* setShowEveryNth(int val);
   int getShowEveryNth();
 
-  DerivedQuantity* setEllipsoidScale(float val);
-  float getEllipsoidScale();
+  DerivedQuantity* setPositionScale(float val);
+  float getPositionScale();
+
+  DerivedQuantity* setRotationScale(float val);
+  float getRotationScale();
 
   DerivedQuantity* setPositionEllipsoidColor(glm::vec3 val);
   glm::vec3 getPositionEllipsoidColor();

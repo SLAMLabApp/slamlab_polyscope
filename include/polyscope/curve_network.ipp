@@ -286,8 +286,31 @@ CurveNetworkNodeCovarianceQuantity* CurveNetwork::addNodeCovariance6x6Quantity(s
   poseRots.reserve(covariances6x6.size());
 
   for (const auto& cov6x6 : covariances6x6) {
-    posCovs.push_back(CurveNetworkNodeCovarianceQuantity::extractPositionCovariance(cov6x6));
-    rotCovs.push_back(CurveNetworkNodeCovarianceQuantity::extractRotationCovariance(cov6x6));
+    auto posCov{CurveNetworkNodeCovarianceQuantity::extractPositionCovariance(cov6x6)};
+    auto rotCov{CurveNetworkNodeCovarianceQuantity::extractRotationCovariance(cov6x6)};
+
+    // Position: Keep full 3x3 covariance matrix for eigendecomposition
+    // computeEllipsoidParams will extract eigenvalues and compute sqrt for axes lengths
+
+    // For rotation: RViz-style conversion from radians to metric scale
+    // Extract diagonal variances, convert to sigma, then apply tan() conversion
+    const float max_degrees{89.0f};
+    const float deg_to_rad{3.14159265359f / 180.0f};
+    for (int i{}; i < 3; ++i) {
+      float sigma_radians{std::sqrt(rotCov[i][i])};
+      // Convert to metric scale: 2 * tan(sigma/2), bounded by max angle
+      sigma_radians /= 2.0f;
+      if (sigma_radians > max_degrees * deg_to_rad) sigma_radians = max_degrees * deg_to_rad;
+      rotCov[i][i] = 2.0f * std::tan(sigma_radians);
+      // Zero out off-diagonal elements - rotation uncertainties are independent per axis
+      if (i < 2) {
+        rotCov[i][i + 1] = 0.0f;
+        rotCov[i + 1][i] = 0.0f;
+      }
+    }
+
+    posCovs.push_back(posCov);
+    rotCovs.push_back(rotCov);
     poseRots.push_back(glm::mat3{1.0f}); // Identity - covariances assumed in world frame
   }
 
@@ -313,8 +336,31 @@ CurveNetwork::addNodeCovariance6x6Quantity(std::string name, const TCov& covaria
   poseRots.reserve(poses.size());
 
   for (const auto& cov6x6 : covariances6x6) {
-    posCovs.push_back(CurveNetworkNodeCovarianceQuantity::extractPositionCovariance(cov6x6));
-    rotCovs.push_back(CurveNetworkNodeCovarianceQuantity::extractRotationCovariance(cov6x6));
+    auto posCov{CurveNetworkNodeCovarianceQuantity::extractPositionCovariance(cov6x6)};
+    auto rotCov{CurveNetworkNodeCovarianceQuantity::extractRotationCovariance(cov6x6)};
+
+    // Position: Keep full 3x3 covariance matrix for eigendecomposition
+    // computeEllipsoidParams will extract eigenvalues and compute sqrt for axes lengths
+
+    // For rotation: RViz-style conversion from radians to metric scale
+    // Extract diagonal variances, convert to sigma, then apply tan() conversion
+    const float max_degrees{89.0f};
+    const float deg_to_rad{M_PI / 180.0f};
+    for (int i{}; i < 3; ++i) {
+      float sigma_radians{std::sqrt(rotCov[i][i])};
+      // Convert to metric scale: 2 * tan(sigma/2), bounded by max angle
+      sigma_radians /= 2.0f;
+      if (sigma_radians > max_degrees * deg_to_rad) sigma_radians = max_degrees * deg_to_rad;
+      rotCov[i][i] = 2.0f * std::tan(sigma_radians);
+      // Zero out off-diagonal elements - rotation uncertainties are independent per axis
+      if (i < 2) {
+        rotCov[i][i + 1] = 0.0f;
+        rotCov[i + 1][i] = 0.0f;
+      }
+    }
+
+    posCovs.push_back(posCov);
+    rotCovs.push_back(rotCov);
   }
 
   for (const auto& pose : poses) {
