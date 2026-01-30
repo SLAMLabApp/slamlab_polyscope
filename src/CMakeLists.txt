@@ -368,6 +368,7 @@ add_definitions(-DNOMINMAX)
 
 # Include settings
 target_include_directories(polyscope PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../include")
+target_include_directories(polyscope SYSTEM PUBLIC "/usr/include/eigen3")
 
 # Link settings
 target_link_libraries(polyscope PUBLIC imgui glm::glm)

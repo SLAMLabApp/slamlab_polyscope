@@ -5,6 +5,7 @@
 #include "polyscope/polyscope.h"
 #include "polyscope/simple_triangle_mesh.h"
 
+#include <Eigen/Dense>
 #include <algorithm>
 #include <cmath>
 #include <iostream>
@@ -160,22 +161,78 @@ CovarianceQuantityBase<DerivedQuantity, ParentStructure>::computeEllipsoidParams
                                                                                  float scale) const {
   EllipsoidParams params;
 
-  // Use only diagonal elements for axes-aligned ellipsoid (ignores correlations but much more stable)
-  // Extract diagonal variances: cov[col][row], so diagonal is [0][0], [1][1], [2][2]
-  glm::vec3 variances{std::max(covariance[0][0], 1e-8f), std::max(covariance[1][1], 1e-8f),
-                      std::max(covariance[2][2], 1e-8f)};
+  // Convert GLM matrix to Eigen for stable eigendecomposition
+  // GLM is column-major: mat[col][row]
+  Eigen::Matrix3f cov_eigen{};
+  for (int i{}; i < 3; ++i)
+    for (int j{}; j < 3; ++j)
+      cov_eigen(i, j) = 0.5f * (covariance[j][i] + covariance[i][j]); // Ensure symmetry
 
-  // Check for invalid/infinite variances
+  // Perform eigendecomposition using Eigen's SelfAdjointEigenSolver
+  // This is specifically designed for symmetric matrices and is very stable
+  Eigen::SelfAdjointEigenSolver<Eigen::Matrix3f> eigensolver(cov_eigen);
+  
+  if (eigensolver.info() != Eigen::Success) {
+    // Fallback to identity if eigendecomposition failed
+    params.axes = glm::vec3(0.01f) * scale;
+    params.rotation = glm::mat3(1.0f);
+    return params;
+  }
+
+  // Get eigenvalues (already sorted in ascending order by SelfAdjointEigenSolver)
+  Eigen::Vector3f eigenvalues{eigensolver.eigenvalues()};
+  Eigen::Matrix3f eigenvectors{eigensolver.eigenvectors()};
+
+  // Ensure eigenvalues are positive
+  for (int i{}; i < 3; ++i)
+    eigenvalues(i) = std::max(eigenvalues(i), 1e-8f);
+
+  // Check for invalid/infinite eigenvalues
   for (int i{}; i < 3; ++i) {
-    if (!std::isfinite(variances[i]) || variances[i] > 1e6f) {
+    if (!std::isfinite(eigenvalues(i)) || eigenvalues(i) > 1e6f) {
       params.axes = glm::vec3(0.01f) * scale;
       params.rotation = glm::mat3(1.0f);
       return params;
     }
   }
 
-  // Semi-axes are sqrt of variances (standard deviations), scaled by user parameter
-  glm::vec3 axes{glm::sqrt(variances) * scale};
+  // Sort in descending order (largest first) for consistent visualization
+  // Swap indices 0 and 2 since SelfAdjointEigenSolver returns ascending order
+  std::swap(eigenvalues(0), eigenvalues(2));
+  eigenvectors.col(0).swap(eigenvectors.col(2));
+
+  // Ensure consistent eigenvector orientation by enforcing that the component 
+  // with largest absolute value is always positive
+  for (int i{}; i < 3; ++i) {
+    // Find component with largest absolute value
+    int maxIdx{};
+    float maxComp{std::abs(eigenvectors(0, i))};
+    for (int j{1}; j < 3; ++j) {
+      if (std::abs(eigenvectors(j, i)) > maxComp) {
+        maxComp = std::abs(eigenvectors(j, i));
+        maxIdx = j;
+      }
+    }
+    // Flip if largest component is negative
+    if (eigenvectors(maxIdx, i) < 0.0f)
+      eigenvectors.col(i) = -eigenvectors.col(i);
+  }
+
+  // Ensure right-handed coordinate system (det = +1)
+  float det{eigenvectors.determinant()};
+  if (!std::isfinite(det) || std::abs(det) < 0.01f) {
+    // Degenerate matrix, use identity
+    params.axes = glm::vec3(0.01f) * scale;
+    params.rotation = glm::mat3(1.0f);
+    return params;
+  }
+  if (det < 0.0f)
+    eigenvectors.col(2) = -eigenvectors.col(2); // Flip third eigenvector
+
+  // Semi-axes are sqrt of eigenvalues (standard deviations), scaled by user parameter
+  glm::vec3 axes{std::sqrt(eigenvalues(0)) * scale, 
+                 std::sqrt(eigenvalues(1)) * scale, 
+                 std::sqrt(eigenvalues(2)) * scale};
 
   // Clamp axes to reasonable bounds
   const float maxAxisLength{1000.0f};
@@ -186,8 +243,14 @@ CovarianceQuantityBase<DerivedQuantity, ParentStructure>::computeEllipsoidParams
       axes[i] = glm::clamp(axes[i], 1e-6f, maxAxisLength);
   }
 
+  // Convert Eigen rotation matrix back to GLM (column-major)
+  glm::mat3 rotation{};
+  for (int i{}; i < 3; ++i)
+    for (int j{}; j < 3; ++j)
+      rotation[i][j] = eigenvectors(j, i); // Transpose: GLM is column-major, Eigen is row-major access
+
   params.axes = axes;
-  params.rotation = glm::mat3(1.0f); // Identity - no rotation from covariance, only pose rotation applied
+  params.rotation = rotation;
 
   return params;
 }
@@ -408,11 +471,13 @@ void CovarianceQuantityBase<DerivedQuantity, ParentStructure>::drawEllipsoids(
 
     // Handle rotation ellipsoids (2D discs perpendicular to each axis, RViz-style)
     if (i < rotationCovariances.size() && showRotationEllipsoids.get() && passesNthFilter) {
-      // Get position ellipsoid axes to offset rotation ellipsoids outside
-      glm::vec3 posAxes{0.0f};
+      // Get position ellipsoid parameters to offset rotation ellipsoids outside
+      EllipsoidParams posParams{};
+      posParams.axes = glm::vec3(0.0f);
+      posParams.rotation = glm::mat3(1.0f);
+      
       if (i < positionCovariances.size()) {
-        EllipsoidParams posParams = computeEllipsoidParams(positionCovariances[i], posScale);
-        posAxes = posParams.axes;
+        posParams = computeEllipsoidParams(positionCovariances[i], posScale);
       }
 
       // Get pose rotation if available
@@ -425,17 +490,19 @@ void CovarianceQuantityBase<DerivedQuantity, ParentStructure>::drawEllipsoids(
       const glm::mat3& rotCov = rotationCovariances[i];
       glm::vec3 rotUncertainties{rotCov[0][0], rotCov[1][1], rotCov[2][2]};
 
-      // Create 3 discs, one perpendicular to each axis
+      // Create 3 discs, one perpendicular to each principal axis of the position ellipsoid
       // Each disc uses the OTHER two axis uncertainties for its radii
       for (int axis = 0; axis < 3; axis++) {
-        // Compute offset direction along the axis (in pose frame)
+        // Compute offset direction along the principal axis (in ellipsoid's own frame)
         glm::vec3 offsetDir(0.0f);
         offsetDir[axis] = 1.0f;
 
-        // Place the disc at a distance based on the axis-specific radius of the position ellipsoid
-        // This makes discs closer on small axes and farther on large axes
-        float axisRadius = posAxes[axis];
-        glm::vec3 offset = poseRotation * (offsetDir * (axisRadius * 1.3f));
+        // Transform offset to world frame using:
+        // 1. Position ellipsoid rotation (eigenvector orientation)
+        // 2. Pose rotation (body frame orientation)
+        // Place disc at 1.3x the radius along that principal axis
+        glm::vec3 ellipsoidFrameOffset = offsetDir * (posParams.axes[axis] * 1.3f);
+        glm::vec3 offset = poseRotation * (posParams.rotation * ellipsoidFrameOffset);
 
         // Determine the two radii for this disc (perpendicular to 'axis')
         // Disc perpendicular to X uses Y,Z uncertainties; perpendicular to Y uses X,Z; etc.
@@ -458,10 +525,12 @@ void CovarianceQuantityBase<DerivedQuantity, ParentStructure>::drawEllipsoids(
 
         // Create the 2D disc vertices
         for (const auto& v : sphereVertices) {
-          // Scale sphere vertices to create a thin disc
+          // Scale sphere vertices to create a thin disc (in local ellipsoid frame)
           glm::vec3 scaled{v.x * discRadii.x, v.y * discRadii.y, v.z * discRadii.z};
+          // Apply eigenvector rotation to align disc with principal axes
+          glm::vec3 rotated = posParams.rotation * scaled;
           // Apply pose rotation to orient disc with the pose frame
-          glm::vec3 oriented = poseRotation * scaled;
+          glm::vec3 oriented = poseRotation * rotated;
           rotEllipsoidVerts.push_back(elementPos + offset + oriented);
         }
 
