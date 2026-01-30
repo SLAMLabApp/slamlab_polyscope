@@ -162,8 +162,7 @@ CovarianceQuantityBase<DerivedQuantity, ParentStructure>::computeEllipsoidParams
 
   // Use only diagonal elements for axes-aligned ellipsoid (ignores correlations but much more stable)
   // Extract diagonal variances: cov[col][row], so diagonal is [0][0], [1][1], [2][2]
-  glm::vec3 variances{std::max(covariance[0][0], 1e-8f), 
-                      std::max(covariance[1][1], 1e-8f), 
+  glm::vec3 variances{std::max(covariance[0][0], 1e-8f), std::max(covariance[1][1], 1e-8f),
                       std::max(covariance[2][2], 1e-8f)};
 
   // Check for invalid/infinite variances
