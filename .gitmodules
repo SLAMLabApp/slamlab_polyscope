@@ -5,7 +5,7 @@
 [submodule "deps/imgui/imgui"]
 	path = deps/imgui/imgui
 	url = https://github.com/ocornut/imgui.git
-	branch = master
+	branch = docking
 [submodule "deps/happly"]
 	path = deps/happly
 	url = https://github.com/nmwsharp/happly.git
