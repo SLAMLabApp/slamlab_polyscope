@@ -52,6 +52,7 @@ float shadowDarkness = 0.25;
 
 float uiScale = -1.0; // unset, must be set manually or during initialization
 int ssaaFactor = 1;
+std::array<float, 3> accentColor = {0.333f, 0.749f, 0.682f}; // default teal
 
 // Transparency
 TransparencyMode transparencyMode = TransparencyMode::None;

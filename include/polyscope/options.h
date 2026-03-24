@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <array>
 #include <functional>
 #include <string>
 #include <tuple>
@@ -99,6 +100,9 @@ extern std::string screenshotExtension; // sets the extension used for automatic
 
 // SSAA scaling in pixel multiples
 extern int ssaaFactor;
+
+// Accent color used for ImGui styled elements (RGB, 0-1 range)
+extern std::array<float, 3> accentColor;
 
 // DPI scaling to scale the UI on high-resolutoin screens
 extern float uiScale;
