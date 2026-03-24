@@ -127,6 +127,10 @@ extern bool userGuiIsOnRightSide;
 // effect the user gui panel. (default: true)
 extern bool buildDefaultGuiPanels;
 
+// If true, the default GUI panels (Visualization menu, Structures) are freely dockable ImGui windows.
+// If false (default), they are fixed/anchored to the right side of the viewport.
+extern bool dockableDefaultGuiPanels;
+
 // If false, Polyscope will not render the scene into the draw buffer
 // (this is useful if you are doing custom rendering and filling the draw buffer yourself)
 extern bool renderScene;

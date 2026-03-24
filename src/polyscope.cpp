@@ -697,9 +697,12 @@ void buildPolyscopeGui() {
 
   // Create window
   static bool showPolyscopeWindow = true;
-  float rightWindowX = view::windowWidth - leftWindowsWidth - imguiStackMargin;
-  ImGui::SetNextWindowPos(ImVec2(rightWindowX, imguiStackMargin));
-  ImGui::SetNextWindowSize(ImVec2(leftWindowsWidth, 0.));
+
+  if (!options::dockableDefaultGuiPanels) {
+    float rightWindowX = view::windowWidth - leftWindowsWidth - imguiStackMargin;
+    ImGui::SetNextWindowPos(ImVec2(rightWindowX, imguiStackMargin));
+    ImGui::SetNextWindowSize(ImVec2(leftWindowsWidth, 0.));
+  }
 
   ImGui::Begin("Visualization menu", &showPolyscopeWindow);
 
@@ -857,10 +860,12 @@ void buildPolyscopeGui() {
   leftWindowsWidth = ImGui::GetWindowWidth();
 
   // Keep window anchored to the right side
-  ImVec2 currentPos = ImGui::GetWindowPos();
-  float desiredX = view::windowWidth - leftWindowsWidth - imguiStackMargin;
-  if (currentPos.x != desiredX) {
-    ImGui::SetWindowPos(ImVec2(desiredX, currentPos.y));
+  if (!options::dockableDefaultGuiPanels) {
+    ImVec2 currentPos = ImGui::GetWindowPos();
+    float desiredX = view::windowWidth - leftWindowsWidth - imguiStackMargin;
+    if (currentPos.x != desiredX) {
+      ImGui::SetWindowPos(ImVec2(desiredX, currentPos.y));
+    }
   }
 
   ImGui::End();
@@ -872,10 +877,13 @@ void buildStructureGui() {
   // Create window
   static bool showStructureWindow = true;
 
-  float rightWindowX = view::windowWidth - leftWindowsWidth - imguiStackMargin;
-  ImGui::SetNextWindowPos(ImVec2(rightWindowX, lastWindowHeightPolyscope + 2 * imguiStackMargin));
-  ImGui::SetNextWindowSize(
-      ImVec2(leftWindowsWidth, view::windowHeight - lastWindowHeightPolyscope - 3 * imguiStackMargin));
+  if (!options::dockableDefaultGuiPanels) {
+    float rightWindowX = view::windowWidth - leftWindowsWidth - imguiStackMargin;
+    ImGui::SetNextWindowPos(ImVec2(rightWindowX, lastWindowHeightPolyscope + 2 * imguiStackMargin));
+    ImGui::SetNextWindowSize(
+        ImVec2(leftWindowsWidth, view::windowHeight - lastWindowHeightPolyscope - 3 * imguiStackMargin));
+  }
+
   ImGui::Begin("Structures", &showStructureWindow);
 
   // only show groups if there are any
@@ -957,10 +965,12 @@ void buildStructureGui() {
   leftWindowsWidth = ImGui::GetWindowWidth();
 
   // Keep window anchored to the right side
-  ImVec2 currentPos = ImGui::GetWindowPos();
-  float desiredX = view::windowWidth - leftWindowsWidth - imguiStackMargin;
-  if (currentPos.x != desiredX) {
-    ImGui::SetWindowPos(ImVec2(desiredX, currentPos.y));
+  if (!options::dockableDefaultGuiPanels) {
+    ImVec2 currentPos = ImGui::GetWindowPos();
+    float desiredX = view::windowWidth - leftWindowsWidth - imguiStackMargin;
+    if (currentPos.x != desiredX) {
+      ImGui::SetWindowPos(ImVec2(desiredX, currentPos.y));
+    }
   }
 
   ImGui::End();

@@ -63,6 +63,7 @@ int transparencyRenderPasses = 8;
 bool buildGui = true;
 bool userGuiIsOnRightSide = true;
 bool buildDefaultGuiPanels = true;
+bool dockableDefaultGuiPanels = false;
 bool renderScene = true;
 bool openImGuiWindowForUserCallback = true;
 std::function<void()> configureImGuiStyleCallback = configureImGuiStyle;
