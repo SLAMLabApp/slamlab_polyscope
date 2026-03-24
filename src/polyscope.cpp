@@ -696,7 +696,6 @@ void buildPolyscopeGui() {
   ensureWindowWidthsSet();
 
   // Create window
-  static bool showPolyscopeWindow = true;
 
   if (!options::dockableDefaultGuiPanels) {
     float rightWindowX = view::windowWidth - leftWindowsWidth - imguiStackMargin;
@@ -704,7 +703,7 @@ void buildPolyscopeGui() {
     ImGui::SetNextWindowSize(ImVec2(leftWindowsWidth, 0.));
   }
 
-  ImGui::Begin("Visualization menu", &showPolyscopeWindow);
+  ImGui::Begin("Visualization menu");
 
   if (ImGui::Button("Reset View")) {
     view::flyToHomeView();
@@ -874,9 +873,6 @@ void buildPolyscopeGui() {
 void buildStructureGui() {
   ensureWindowWidthsSet();
 
-  // Create window
-  static bool showStructureWindow = true;
-
   if (!options::dockableDefaultGuiPanels) {
     float rightWindowX = view::windowWidth - leftWindowsWidth - imguiStackMargin;
     ImGui::SetNextWindowPos(ImVec2(rightWindowX, lastWindowHeightPolyscope + 2 * imguiStackMargin));
@@ -884,7 +880,7 @@ void buildStructureGui() {
         ImVec2(leftWindowsWidth, view::windowHeight - lastWindowHeightPolyscope - 3 * imguiStackMargin));
   }
 
-  ImGui::Begin("Structures", &showStructureWindow);
+  ImGui::Begin("Structures");
 
   // only show groups if there are any
   if (state::groups.size() > 0) {
