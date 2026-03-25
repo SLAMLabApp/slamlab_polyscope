@@ -127,7 +127,7 @@ extern bool userGuiIsOnRightSide;
 // effect the user gui panel. (default: true)
 extern bool buildDefaultGuiPanels;
 
-// If true, the default GUI panels (Visualization menu, Structures) are freely dockable ImGui windows.
+// If true, the default GUI panels (Visualization, Structures) are freely dockable ImGui windows.
 // If false (default), they are fixed/anchored to the right side of the viewport.
 extern bool dockableDefaultGuiPanels;
 

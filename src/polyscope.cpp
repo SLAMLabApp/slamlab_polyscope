@@ -123,10 +123,10 @@ void writePrefsFile() {
   // Build json object
   // clang-format off
   json prefsJSON = {
-      {"windowWidth", windowWidth}, 
-      {"windowHeight", windowHeight}, 
+      {"windowWidth", windowWidth},
+      {"windowHeight", windowHeight},
       {"windowPosX", posX},
-      {"windowPosY", posY},         
+      {"windowPosY", posY},
       {"uiScale", uiScale},
   };
   // clang-format on
@@ -703,7 +703,7 @@ void buildPolyscopeGui() {
     ImGui::SetNextWindowSize(ImVec2(leftWindowsWidth, 0.));
   }
 
-  ImGui::Begin("Visualization menu");
+  ImGui::Begin("Visualization");
 
   if (ImGui::Button("Reset View")) {
     view::flyToHomeView();
@@ -769,7 +769,7 @@ void buildPolyscopeGui() {
 			ImGui::TextUnformatted("   Select elements of a structure with [left click]. Data from");
 			ImGui::TextUnformatted("     that element will be shown on the right. Use [right click]");
 			ImGui::TextUnformatted("     to clear the selection.");
-   
+
 		ImGui::End();
     // clang-format on
   }
