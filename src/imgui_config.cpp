@@ -2,6 +2,7 @@
 
 #include "polyscope/imgui_config.h"
 #include <polyscope/polyscope.h>
+#include <polyscope/polyscope.h>
 
 namespace polyscope {
 
@@ -12,6 +13,8 @@ unsigned int getCousineRegularCompressedSize();
 const unsigned int* getCousineRegularCompressedData();
 unsigned int getLatoRegularCompressedSize();
 const unsigned int* getLatoRegularCompressedData();
+unsigned int getLucideIconsCompressedSize();
+const unsigned char* getLucideIconsCompressedData();
 } // namespace render
 
 void configureImGuiStyle() {
@@ -20,11 +23,15 @@ void configureImGuiStyle() {
   *style = ImGuiStyle(); // apply the default style as a starting point
 
   // Style
+  *style = ImGuiStyle(); // apply the default style as a starting point
+
+  // Style
   style->WindowRounding = 1;
   style->FrameRounding = 1;
   style->FramePadding.y = 4;
   style->ScrollbarRounding = 1;
   style->ScrollbarSize = 20;
+  style->ScaleAllSizes(options::uiScale);
   style->ScaleAllSizes(options::uiScale);
 
 

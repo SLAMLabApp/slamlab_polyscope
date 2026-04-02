@@ -32,18 +32,13 @@ class CurveNetworkEdgeVectorQuantity;
 class CurveNetworkNodeCovarianceQuantity;
 
 
-template <> // Specialize the quantity type
-struct QuantityTypeHelper<CurveNetwork> {
-  typedef CurveNetworkQuantity type;
-};
-
 struct CurveNetworkPickResult {
   CurveNetworkElement elementType; // which kind of element did we click
   int64_t index;                   // index of the clicked element
   float tEdge = -1;                // if the pick is an edge, the t-value in [0,1] along the edge
 };
 
-class CurveNetwork : public QuantityStructure<CurveNetwork> {
+class CurveNetwork : public Structure {
 public:
   // Allow covariance quantity to access node positions
   friend class CurveNetworkNodeCovarianceQuantity;

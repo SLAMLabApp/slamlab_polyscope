@@ -28,16 +28,7 @@ void RawColorAlphaRenderImageQuantity::drawDelayed() {
 
   if (!program) prepare();
 
-  // set uniforms
-  glm::mat4 P = view::getCameraPerspectiveMatrix();
-  glm::mat4 Pinv = glm::inverse(P);
-
-  program->setUniform("u_projMatrix", glm::value_ptr(P));
-  program->setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
-  program->setUniform("u_viewport", render::engine->getCurrentViewport());
-  program->setUniform("u_transparency", transparency.get());
-  render::engine->setTonemapUniforms(*program);
-
+  setRenderImageUniforms(*program, true);
 
   // draw
   program->draw();
@@ -72,10 +63,16 @@ void RawColorAlphaRenderImageQuantity::prepare() {
   // applied after compositing.
 
   // Create the sourceProgram
-  program = render::engine->requestShader("TEXTURE_DRAW_RAW_RENDERIMAGE_PLAIN",
-                                          {getImageOriginRule(imageOrigin), "TEXTURE_SHADE_COLORALPHA",
-                                           "INVERSE_TONEMAP", getIsPremultiplied() ? "" : "TEXTURE_PREMULTIPLY_OUT"},
-                                          render::ShaderReplacementDefaults::Process);
+  // clang-format off
+  std::vector<std::string> rules = parent.addStructureRules({
+    getImageOriginRule(imageOrigin), 
+    "TEXTURE_SHADE_COLORALPHA", "INVERSE_TONEMAP",
+    getIsPremultiplied() ? "" : "TEXTURE_PREMULTIPLY_OUT"
+  });
+  rules = removeRule(rules, "GENERATE_VIEW_POS");
+
+  program = render::engine->requestShader("TEXTURE_DRAW_RAW_RENDERIMAGE_PLAIN", rules);
+  // clang-format on
 
   program->setAttribute("a_position", render::engine->screenTrianglesCoords());
   program->setTextureFromBuffer("t_depth", depths.getRenderTextureBuffer().get());

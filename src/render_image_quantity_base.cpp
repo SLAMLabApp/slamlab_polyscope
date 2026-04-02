@@ -21,6 +21,8 @@ RenderImageQuantityBase::RenderImageQuantityBase(Structure& parent_, std::string
   if (hasNormals) {
     normals.setTextureSize(dimX, dimY);
   }
+
+  requestRedraw();
 }
 
 size_t RenderImageQuantityBase::nPix() { return dimX * dimY; }
@@ -64,6 +66,24 @@ void RenderImageQuantityBase::updateBaseBuffers(const std::vector<float>& newDep
   requestRedraw();
 }
 
+void RenderImageQuantityBase::setRenderImageUniforms(render::ShaderProgram& program, bool withTonemap) {
+  parent.setStructureUniforms(program);
+
+  glm::mat4 P = view::getCameraPerspectiveMatrix();
+  glm::mat4 Pinv = glm::inverse(P);
+
+  program.setUniform("u_projMatrix", glm::value_ptr(P));
+  program.setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
+  program.setUniform("u_viewport", render::engine->getCurrentViewport());
+  program.setUniform("u_textureTransparency", transparency.get());
+  if (program.hasUniform("u_transparency")) {
+    program.setUniform("u_transparency", 1.0f);
+  }
+
+  if (withTonemap) {
+    render::engine->setTonemapUniforms(program);
+  }
+}
 
 void RenderImageQuantityBase::drawPickDelayed() {
   if (!isEnabled()) return;
@@ -71,24 +91,19 @@ void RenderImageQuantityBase::drawPickDelayed() {
   if (!pickProgram) preparePick();
 
   // set uniforms
+  parent.setStructureUniforms(*pickProgram);
   glm::mat4 P = view::getCameraPerspectiveMatrix();
   glm::mat4 Pinv = glm::inverse(P);
 
   pickProgram->setUniform("u_projMatrix", glm::value_ptr(P));
   pickProgram->setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
   pickProgram->setUniform("u_viewport", render::engine->getCurrentViewport());
-  pickProgram->setUniform("u_transparency", 1.0);
+  pickProgram->setUniform("u_textureTransparency", 1.0);
   pickProgram->setUniform("u_color", pickColor);
 
   // draw
   pickProgram->draw();
 }
-
-void RenderImageQuantityBase::refresh() {
-  pickProgram = nullptr;
-  Quantity::refresh();
-}
-
 
 void RenderImageQuantityBase::preparePick() {
 
@@ -99,11 +114,14 @@ void RenderImageQuantityBase::preparePick() {
 
   // Create the sourceProgram
   // clang-format off
-  pickProgram = render::engine->requestShader("TEXTURE_DRAW_RENDERIMAGE_PLAIN",
-    {
+  std::vector<std::string> rules = parent.addStructureRules({
       getImageOriginRule(imageOrigin), 
       "SHADECOLOR_FROM_UNIFORM",
-    },
+    });
+  rules = removeRule(rules, "GENERATE_VIEW_POS");
+
+  pickProgram = render::engine->requestShader("TEXTURE_DRAW_RENDERIMAGE_PLAIN", 
+    rules,
     render::ShaderReplacementDefaults::Pick
   );
   // clang-format on
@@ -112,21 +130,25 @@ void RenderImageQuantityBase::preparePick() {
   pickProgram->setTextureFromBuffer("t_depth", depths.getRenderTextureBuffer().get());
 }
 
+void RenderImageQuantityBase::refresh() {
+  pickProgram = nullptr;
+  Quantity::refresh();
+}
+
 void RenderImageQuantityBase::disableFullscreenDrawing() {
   if (isEnabled()) {
     setEnabled(false);
   }
 }
 
-RenderImageQuantityBase* RenderImageQuantityBase::setEnabled(bool newEnabled) {
-  if (newEnabled == isEnabled()) return this;
+void RenderImageQuantityBase::setEnabled(bool newEnabled) {
+  if (newEnabled == isEnabled()) return;
   if (newEnabled == true && !allowFullscreenCompositing.get()) {
     // if drawing fullscreen, disable anything else which was already drawing fullscreen
     disableAllFullscreenArtists();
   }
   enabled = newEnabled;
   requestRedraw();
-  return this;
 }
 
 RenderImageQuantityBase* RenderImageQuantityBase::setMaterial(std::string m) {

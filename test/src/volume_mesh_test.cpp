@@ -245,7 +245,7 @@ TEST_F(PolyscopeTest, VolumeMeshInspect) {
   polyscope::VolumeMesh* psVol = polyscope::registerVolumeMesh("vol", verts, cells);
 
   // plain old inspecting
-  polyscope::SlicePlane* p = polyscope::addSceneSlicePlane();
+  polyscope::SlicePlane* p = polyscope::addSlicePlane();
   p->setVolumeMeshToInspect("vol");
   polyscope::show(3);
 
@@ -258,6 +258,11 @@ TEST_F(PolyscopeTest, VolumeMeshInspect) {
   // with a categorical quantity
   auto q1Cat = psVol->addVertexScalarQuantity("vals", vals, polyscope::DataType::CATEGORICAL);
   q1Cat->setEnabled(true);
+
+  // try orthographic rendering
+  polyscope::view::setProjectionMode(polyscope::ProjectionMode::Orthographic);
+  polyscope::show(3);
+  polyscope::view::setProjectionMode(polyscope::ProjectionMode::Perspective);
   polyscope::show(3);
 
   // clear it out
@@ -280,7 +285,7 @@ TEST_F(PolyscopeTest, VolumeMeshInspectWithExtra) {
   polyscope::VolumeMesh* psVolExtra = polyscope::registerVolumeMesh("vol extra", verts, cells);
 
   // plain old inspecting
-  polyscope::SlicePlane* p = polyscope::addSceneSlicePlane();
+  polyscope::SlicePlane* p = polyscope::addSlicePlane();
   p->setVolumeMeshToInspect("vol");
   polyscope::show(3);
 

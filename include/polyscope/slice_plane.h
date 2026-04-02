@@ -42,6 +42,10 @@ public:
   const std::string postfix;
   std::string uniquePrefix();
 
+  // Remove the slice plane from the scene
+  // (destroys this object, pointer is now invalid)
+  void remove();
+
   // Set the position and orientation of the plane
   // planePosition is any 3D position which the plane touches (the center of the plane)
   // planeNormal is a vector giving the normal direction of the plane, objects
@@ -49,7 +53,13 @@ public:
   void setPose(glm::vec3 planePosition, glm::vec3 planeNormal);
 
   // == Some getters and setters
+  glm::vec3 getCenter();
+  glm::vec3 getNormal();
 
+  bool getEnabled();
+  void setEnabled(bool newVal);
+
+  // deprecated, should have been called 'enabled'
   bool getActive();
   void setActive(bool newVal);
 
@@ -80,7 +90,7 @@ public:
 
 protected:
   // = State
-  PersistentValue<bool> active;     // is it actually slicing?
+  PersistentValue<bool> enabled;    // is it actually slicing?
   PersistentValue<bool> drawPlane;  // do we draw the plane onscreen?
   PersistentValue<bool> drawWidget; // do we draw the widget onscreen?
   PersistentValue<glm::mat4> objectTransform;
@@ -110,6 +120,79 @@ protected:
   // Helpers
   void setSliceAttributes(render::ShaderProgram& p);
   void createVolumeSliceProgram();
+  void prepare();
+  void updateWidgetEnabled();
+};
+
+
+// SliceProfile manages two parallel slice planes that move and rotate together
+class SliceProfile : public Widget {
+
+public:
+  // == Constructors
+  SliceProfile(std::string name);
+  ~SliceProfile();
+
+  // No copy constructor/assignment
+  SliceProfile(const SliceProfile&) = delete;
+  SliceProfile& operator=(const SliceProfile&) = delete;
+
+  void buildGUI();
+  void draw();
+  void drawGeometry();
+
+  const std::string name;
+  const std::string postfix;
+  std::string uniquePrefix();
+
+  // Set the position and orientation of the profile (both planes)
+  void setPose(glm::vec3 centerPosition, glm::vec3 planeNormal);
+
+  // == Getters and setters
+  bool getActive();
+  void setActive(bool newVal);
+
+  bool getDrawPlanes();
+  void setDrawPlanes(bool newVal);
+
+  bool getDrawWidget();
+  void setDrawWidget(bool newVal);
+
+  glm::mat4 getTransform();
+  void setTransform(glm::mat4 newTransform);
+
+  void setColor(glm::vec3 newVal);
+  glm::vec3 getColor();
+
+  void setTransparency(double newVal);
+  double getTransparency();
+
+  void setDistance(float newVal);
+  float getDistance();
+
+  // Access to the two planes (front and back)
+  SlicePlane* getFrontPlane() { return frontPlane; }
+  SlicePlane* getBackPlane() { return backPlane; }
+
+protected:
+  // = State
+  PersistentValue<bool> active;
+  PersistentValue<bool> drawPlanes;
+  PersistentValue<bool> drawWidget;
+  PersistentValue<glm::mat4> objectTransform;
+  PersistentValue<glm::vec3> color;
+  PersistentValue<float> transparency;
+  PersistentValue<float> distance; // distance between the two planes
+
+  // The two parallel planes
+  SlicePlane* frontPlane;
+  SlicePlane* backPlane;
+
+  // Widget that wraps the transform
+  TransformationGizmo transformGizmo;
+
+  // Helpers
+  void updatePlanes();
   void prepare();
   glm::vec3 getCenter();
   glm::vec3 getNormal();
@@ -193,12 +276,24 @@ protected:
 
 
 SlicePlane* addSceneSlicePlane(bool initiallyVisible = false);
+
+// Get a slice plane by name
+SlicePlane* getSlicePlane(std::string name);
+
+// Remove a slice plane by name or pointer
+void removeSlicePlane(std::string name);
+void removeSlicePlane(SlicePlane* plane);
+
+// Remove the last-added slice plane
 void removeLastSceneSlicePlane();
+
+// Remove all slice planes
 void removeAllSlicePlanes();
 SliceProfile* addSceneSliceProfile(bool initiallyVisible = true);
 void removeLastSceneSliceProfile();
 void removeAllSliceProfiles();
 void buildSlicePlaneGUI();
+void notifySlicePlanesChanged(); // call after adding/remove any slice plane
 
 // flag to open the slice plane menu after adding a slice plane
 extern bool openSlicePlaneMenu;

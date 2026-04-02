@@ -6,7 +6,6 @@
 #include "polyscope/color_management.h"
 #include "polyscope/persistent_value.h"
 #include "polyscope/pick.h"
-#include "polyscope/point_cloud_quantity.h"
 #include "polyscope/polyscope.h"
 #include "polyscope/render/engine.h"
 #include "polyscope/render/managed_buffer.h"
@@ -17,6 +16,7 @@
 #include "polyscope/point_cloud_color_quantity.h"
 #include "polyscope/point_cloud_covariance_quantity.h"
 #include "polyscope/point_cloud_parameterization_quantity.h"
+#include "polyscope/point_cloud_quantity.h"
 #include "polyscope/point_cloud_scalar_quantity.h"
 #include "polyscope/point_cloud_vector_quantity.h"
 
@@ -35,16 +35,11 @@ class PointCloudVectorQuantity;
 class PointCloudCovarianceQuantity;
 
 
-template <> // Specialize the quantity type
-struct QuantityTypeHelper<PointCloud> {
-  typedef PointCloudQuantity type;
-};
-
 struct PointCloudPickResult {
   int64_t index;
 };
 
-class PointCloud : public QuantityStructure<PointCloud> {
+class PointCloud : public Structure {
 public:
   // === Member functions ===
 

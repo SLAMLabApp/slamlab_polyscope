@@ -133,7 +133,7 @@ const ShaderStageSpecification PLAIN_RENDERIMAGE_TEXTURE_DRAW_FRAG_SHADER = {
         {"u_projMatrix", RenderDataType::Matrix44Float},
         {"u_invProjMatrix", RenderDataType::Matrix44Float},
         {"u_viewport", RenderDataType::Vector4Float},
-        {"u_transparency", RenderDataType::Float},
+        {"u_textureTransparency", RenderDataType::Float},
     }, 
 
     // attributes
@@ -151,7 +151,7 @@ R"(
   uniform mat4 u_projMatrix; 
   uniform mat4 u_invProjMatrix;
   uniform vec4 u_viewport;
-  uniform float u_transparency;
+  uniform float u_textureTransparency;
 
   in vec2 tCoord;
   uniform sampler2D t_depth;
@@ -167,14 +167,14 @@ R"(
 
     // Fetch values from texture
     float depth = texture(t_depth, tCoord).r;
-
     if(depth > LARGE_FLOAT()) {
       discard;
     }
-
+           
     // Set the depth of the fragment from the stored texture data
     // TODO: this a wasteful way to convert ray depth to gl_FragDepth, I am sure it can be done with much less arithmetic... figure it out 
     // WARNING this code is duplicated in other shaders
+    // WARNING this almost certainly does not work right for orthographic projections
     vec2 depthRange = vec2(gl_DepthRange.near, gl_DepthRange.far);
     vec3 viewRay = fragmentViewPosition(u_viewport, depthRange, u_invProjMatrix, gl_FragCoord);
     viewRay = normalize(viewRay);
@@ -182,6 +182,8 @@ R"(
     float fragdepth = fragDepthFromView(u_projMatrix, depthRange, viewPos);
     gl_FragDepth = fragdepth;
 
+    ${ GLOBAL_FRAGMENT_FILTER_PREP }$
+    ${ GLOBAL_FRAGMENT_FILTER }$
     
     // Shading
     vec3 shadeNormal = vec3(0.f, 0.f, 0.f);
@@ -192,7 +194,7 @@ R"(
     ${ GENERATE_LIT_COLOR }$
 
      // Set alpha
-    float alphaOut = u_transparency;
+    float alphaOut = u_textureTransparency;
     ${ GENERATE_ALPHA }$
     
     ${ PERTURB_LIT_COLOR }$
@@ -215,7 +217,7 @@ const ShaderStageSpecification PLAIN_RAW_RENDERIMAGE_TEXTURE_DRAW_FRAG_SHADER = 
         {"u_projMatrix", RenderDataType::Matrix44Float},
         {"u_invProjMatrix", RenderDataType::Matrix44Float},
         {"u_viewport", RenderDataType::Vector4Float},
-        {"u_transparency", RenderDataType::Float},
+        {"u_textureTransparency", RenderDataType::Float},
     }, 
 
     // attributes
@@ -233,7 +235,7 @@ R"(
   uniform mat4 u_projMatrix; 
   uniform mat4 u_invProjMatrix;
   uniform vec4 u_viewport;
-  uniform float u_transparency;
+  uniform float u_textureTransparency;
 
   in vec2 tCoord;
   uniform sampler2D t_depth;
@@ -249,7 +251,6 @@ R"(
 
     // Fetch values from texture
     float depth = texture(t_depth, tCoord).r;
-
     if(depth > LARGE_FLOAT()) {
       discard;
     }
@@ -264,6 +265,8 @@ R"(
     float fragdepth = fragDepthFromView(u_projMatrix, depthRange, viewPos);
     gl_FragDepth = fragdepth;
 
+    ${ GLOBAL_FRAGMENT_FILTER_PREP }$
+    ${ GLOBAL_FRAGMENT_FILTER }$
     
     // Shading
     ${ GENERATE_SHADE_VALUE }$
@@ -275,7 +278,7 @@ R"(
     ${ GENERATE_LIT_COLOR }$
 
      // Set alpha
-    float alphaOut = u_transparency;
+    float alphaOut = u_textureTransparency;
     ${ GENERATE_ALPHA }$
            
     ${ PERTURB_LIT_COLOR }$
@@ -608,14 +611,14 @@ const ShaderReplacementRule TEXTURE_SET_TRANSPARENCY(
     /* rule name */ "TEXTURE_SET_TRANSPARENCY",
     { /* replacement sources */
       {"FRAG_DECLARATIONS", R"(
-          uniform float u_transparency;
+          uniform float u_textureTransparency;
         )" },
       {"TEXTURE_OUT_ADJUST", R"(
-        textureOut = vec4(textureOut.rgb, textureOut.a * u_transparency);
+        textureOut = vec4(textureOut.rgb, textureOut.a * u_textureTransparency);
       )"}
     },
     /* uniforms */ {
-        {"u_transparency", RenderDataType::Float},
+        {"u_textureTransparency", RenderDataType::Float},
     },
     /* attributes */ {},
     /* textures */ {}
@@ -625,14 +628,14 @@ const ShaderReplacementRule TEXTURE_SET_TRANSPARENCY_PREMULTIPLIED(
     /* rule name */ "TEXTURE_SET_TRANSPARENCY_PREMULTIPLIED",
     { /* replacement sources */
       {"FRAG_DECLARATIONS", R"(
-          uniform float u_transparency;
+          uniform float u_textureTransparency;
         )" },
       {"TEXTURE_OUT_ADJUST", R"(
-        textureOut *= u_transparency;
+        textureOut *= u_textureTransparency;
       )"}
     },
     /* uniforms */ {
-        {"u_transparency", RenderDataType::Float},
+        {"u_textureTransparency", RenderDataType::Float},
     },
     /* attributes */ {},
     /* textures */ {}

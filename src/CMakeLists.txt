@@ -185,6 +185,7 @@ set(SRCS
     file_helpers.cpp
     camera_parameters.cpp
     histogram.cpp
+    color_bar.cpp
     persistent_value.cpp
     color_management.cpp
     transformation_gizmo.cpp
@@ -217,6 +218,11 @@ set(SRCS
     volume_mesh_color_quantity.cpp
     volume_mesh_scalar_quantity.cpp
     volume_mesh_vector_quantity.cpp
+
+    # Sparse volume grid
+    sparse_volume_grid.cpp
+    sparse_volume_grid_scalar_quantity.cpp
+    sparse_volume_grid_color_quantity.cpp
     # Volume grid
     volume_grid.cpp
     volume_grid_scalar_quantity.cpp
@@ -242,6 +248,7 @@ set(SRCS
     ## Embedded binary data
     render/bindata/bindata_font_lato_regular.cpp
     render/bindata/bindata_font_cousine_regular.cpp
+    render/bindata/bindata_font_lucide_icons.cpp
     render/bindata/concrete_seamless.cpp
     render/bindata/bindata_clay.cpp
     render/bindata/bindata_wax.cpp
@@ -261,6 +268,7 @@ set(HEADERS
     ${INCLUDE_ROOT}/camera_view.h
     ${INCLUDE_ROOT}/camera_view.ipp
     ${INCLUDE_ROOT}/check_invalid_values.h
+    ${INCLUDE_ROOT}/color_bar.h
     ${INCLUDE_ROOT}/color_management.h
     ${INCLUDE_ROOT}/color_image_quantity.h
     ${INCLUDE_ROOT}/color_render_image_quantity.h
@@ -351,6 +359,11 @@ set(HEADERS
     ${INCLUDE_ROOT}/volume_grid.ipp
     ${INCLUDE_ROOT}/volume_grid_quantity.h
     ${INCLUDE_ROOT}/volume_grid_scalar_quantity.h
+    ${INCLUDE_ROOT}/sparse_volume_grid.h
+    ${INCLUDE_ROOT}/sparse_volume_grid.ipp
+    ${INCLUDE_ROOT}/sparse_volume_grid_quantity.h
+    ${INCLUDE_ROOT}/sparse_volume_grid_scalar_quantity.h
+    ${INCLUDE_ROOT}/sparse_volume_grid_color_quantity.h
     ${INCLUDE_ROOT}/weak_handle.h)
 
 # Create a single library for the project
@@ -374,3 +387,6 @@ target_include_directories(polyscope SYSTEM PUBLIC "/usr/include/eigen3")
 target_link_libraries(polyscope PUBLIC imgui glm::glm)
 target_link_libraries(polyscope PRIVATE "${BACKEND_LIBS}" stb nlohmann_json::nlohmann_json
                                         MarchingCube::MarchingCube)
+
+                                    # For now, make this private, until we are sure we want to commit to it. We may expose it as public in the future.
+target_link_libraries(polyscope PRIVATE IconFontCppHeaders) 

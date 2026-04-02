@@ -20,6 +20,7 @@ bool enableVSync = false;
 bool enableVSync = true;
 #endif
 LimitFPSMode frameTickLimitFPSMode = LimitFPSMode::SkipFramesToHitTarget;
+LimitFPSMode frameTickLimitFPSMode = LimitFPSMode::SkipFramesToHitTarget;
 
 bool usePrefsFile = true;
 bool initializeWithDefaultStructures = true;
@@ -34,6 +35,7 @@ bool warnForInvalidValues = true;
 bool displayMessagePopups = true;
 
 bool screenshotTransparency = true;
+bool screenshotWithImGuiUI = false;
 bool screenshotWithImGuiUI = false;
 std::string screenshotExtension = ".png";
 
@@ -51,6 +53,7 @@ float shadowDarkness = 0.25;
 // Rendering options
 
 float uiScale = -1.0; // unset, must be set manually or during initialization
+float uiScale = -1.0; // unset, must be set manually or during initialization
 int ssaaFactor = 1;
 std::array<float, 3> accentColor = {0.333f, 0.749f, 0.682f}; // default teal
 
@@ -63,11 +66,13 @@ int transparencyRenderPasses = 8;
 bool buildGui = true;
 bool userGuiIsOnRightSide = true;
 bool buildDefaultGuiPanels = true;
+int rightGuiPaneWidth = 500;
 bool dockableDefaultGuiPanels = false;
 bool renderScene = true;
 bool openImGuiWindowForUserCallback = true;
+bool doDefaultMouseInteraction = true;
 std::function<void()> configureImGuiStyleCallback = configureImGuiStyle;
-std::function<std::tuple<ImFontAtlas*, ImFont*, ImFont*>()> prepareImGuiFontsCallback = prepareImGuiFonts;
+std::function<std::tuple<ImFont*, ImFont*>(ImFontAtlas*)> prepareImGuiFontsCallback = loadBaseFonts;
 
 // Backend and low-level options
 int eglDeviceIndex = -1; // means "try all of them"

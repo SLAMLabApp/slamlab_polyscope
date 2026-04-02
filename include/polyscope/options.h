@@ -6,6 +6,7 @@
 #include <functional>
 #include <string>
 #include <tuple>
+#include <vector>
 
 #include "imgui.h"
 
@@ -101,9 +102,6 @@ extern std::string screenshotExtension; // sets the extension used for automatic
 // SSAA scaling in pixel multiples
 extern int ssaaFactor;
 
-// Accent color used for ImGui styled elements (RGB, 0-1 range)
-extern std::array<float, 3> accentColor;
-
 // DPI scaling to scale the UI on high-resolutoin screens
 extern float uiScale;
 
@@ -127,10 +125,11 @@ extern bool userGuiIsOnRightSide;
 // effect the user gui panel. (default: true)
 extern bool buildDefaultGuiPanels;
 
+// The width of the user GUI panel which is usually on the right side (default: 500)
+extern int rightGuiPaneWidth;
 // If true, the default GUI panels (Visualization, Structures) are freely dockable ImGui windows.
 // If false (default), they are fixed/anchored to the right side of the viewport.
 extern bool dockableDefaultGuiPanels;
-
 // If false, Polyscope will not render the scene into the draw buffer
 // (this is useful if you are doing custom rendering and filling the draw buffer yourself)
 extern bool renderScene;
@@ -138,16 +137,22 @@ extern bool renderScene;
 // Should the user call back start out with an imgui window context open (default: true)
 extern bool openImGuiWindowForUserCallback;
 
+// Controls whether Polyscope's usual panning/rotating/etc view motions are trigged by the mouse.
+// Set this to false to temporarily disable scene camera movement if the mouse is being used for another
+// purpose in a custom interaction.
+// (default: true)
+extern bool doDefaultMouseInteraction;
+
 // A callback function which will be invoked when an ImGui context is created (which may happen several times as
 // Polyscope runs). By default, this is set to invoke `configureImGuiStyle()` from Polyscope's imgui_config.cpp, but you
 // may assign your own function to create custom styles. If this callback is null, the default ImGui style will be used.
 extern std::function<void()> configureImGuiStyleCallback;
 
-// A callback function which will be invoked exactly once during initialization to construct a font atlas for ImGui to
-// use. The callback should return a tuple of three pointers: a newly created global shared font atlas, a regular font,
-// and a mono font. By default, this is set to invoke prepareImGuiFonts() from Polyscope's imgui_config.cpp, but you may
-// assign your own function to create custom styles. If this callback is null, default fonts will be used.
-extern std::function<std::tuple<ImFontAtlas*, ImFont*, ImFont*>()> prepareImGuiFontsCallback;
+// A callback function which will be invoked exactly once during initialization to add fonts to a font atlas for ImGui
+// to use. The callback should return two pointers: a regular font and a mono font. By default, this is set to invoke
+// loadBaseFonts() from Polyscope's imgui_config.cpp, but you may assign your own function to create custom styles. If
+// this callback is null, default fonts will be used.
+extern std::function<std::tuple<ImFont*, ImFont*>(ImFontAtlas*)> prepareImGuiFontsCallback;
 
 // === Backend and low-level options
 
