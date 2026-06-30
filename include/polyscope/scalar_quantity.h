@@ -47,10 +47,20 @@ public:
   std::string getColorMap();
 
   // Data limits mapped in to colormap
-  QuantityT* setMapRange(std::pair<double, double> val);
+  QuantityT* setMapRange(std::pair<double, double> val); // sets explicit absolute limits (Absolute mode)
   std::pair<double, double> getMapRange();
   QuantityT* resetMapRange(); // reset to full range
   std::pair<double, double> getDataRange();
+
+  // Map range mode: explicit absolute limits, or limits tracking data quantiles.
+  // Quantile mode is honored only for STANDARD data; other types behave as Absolute.
+  QuantityT* setMapRangeMode(MapRangeMode mode);
+  MapRangeMode getMapRangeMode();
+
+  // The low/high quantile fractions (each in [0,1]) used in Quantile mode.
+  // Setting them switches to Quantile mode and recomputes the colormap range.
+  QuantityT* setMapRangeQuantile(std::pair<double, double> quantiles);
+  std::pair<double, double> getMapRangeQuantile();
 
   // Isolines
   // NOTE there's a name typo, errant `s` in isolinesEnabled (leaving to avoid breaking change)
@@ -79,7 +89,13 @@ protected:
   std::pair<double, double> dataRange;
   PersistentValue<float> vizRangeMin;
   PersistentValue<float> vizRangeMax;
+  PersistentValue<MapRangeMode> mapRangeMode;
+  PersistentValue<float> quantileLow;
+  PersistentValue<float> quantileHigh;
   Histogram hist;
+
+  // Recompute vizRangeMin/Max from the current data quantiles (Quantile mode).
+  void recomputeQuantileRange();
 
   // Parameters
   PersistentValue<std::string> cMap;

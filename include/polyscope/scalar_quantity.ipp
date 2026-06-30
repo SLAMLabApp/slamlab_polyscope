@@ -4,6 +4,9 @@
 #include "polyscope/check_invalid_values.h"
 #include "polyscope/utilities.h"
 
+#include <algorithm>
+#include <cmath>
+
 namespace polyscope {
 
 template <typename QuantityT>
@@ -12,6 +15,9 @@ ScalarQuantity<QuantityT>::ScalarQuantity(QuantityT& quantity_, const std::vecto
       dataType(dataType_), dataRange(robustMinMax(values.data, 1e-5)),
       vizRangeMin(quantity.uniquePrefix() + "vizRangeMin", -777.), // set later,
       vizRangeMax(quantity.uniquePrefix() + "vizRangeMax", -777.), // including clearing cache
+      mapRangeMode(quantity.uniquePrefix() + "mapRangeMode", MapRangeMode::Absolute),
+      quantileLow(quantity.uniquePrefix() + "quantileLow", 0.05f),
+      quantileHigh(quantity.uniquePrefix() + "quantileHigh", 0.95f),
       cMap(quantity.uniquePrefix() + "cmap", defaultColorMap(dataType)),
       isolinesEnabled(quantity.uniquePrefix() + "isolinesEnabled", false),
       isolineStyle(quantity.uniquePrefix() + "isolinesStyle", IsolineStyle::Stripe),
@@ -26,7 +32,11 @@ ScalarQuantity<QuantityT>::ScalarQuantity(QuantityT& quantity_, const std::vecto
   hist.buildHistogram(values.data, dataType);
   // TODO: I think we might be building the histogram ^^^ twice for many quantities
 
-  if (vizRangeMin.holdsDefaultValue()) { // min and max should always have same cache state
+  if (dataType == DataType::STANDARD && mapRangeMode.get() == MapRangeMode::Quantile) {
+    // Quantile mode always derives the viz range from the current data, so it adapts as
+    // the data changes (e.g. across re-registration of a quantity).
+    recomputeQuantileRange();
+  } else if (vizRangeMin.holdsDefaultValue()) { // min and max should always have same cache state
     // dynamically compute a viz range from the data min/max
     // note that this also clears the persistent value's cahce, so it's like it was never set
     resetMapRange();
@@ -99,6 +109,23 @@ void ScalarQuantity<QuantityT>::buildScalarUI() {
     float speed = (dataRange.second - dataRange.first) / 100.;
     bool changed = false;
 
+    if (dataType == DataType::STANDARD && mapRangeMode.get() == MapRangeMode::Quantile) {
+      // Quantile mode: edit the low/high fractions; the colormap range is derived from the data.
+      bool qChanged = false;
+      qChanged = qChanged | ImGui::DragFloat("##qlow", &quantileLow.get(), 0.001f, 0.f, quantileHigh.get(), "%.3f",
+                                             ImGuiSliderFlags_NoRoundToFormat);
+      ImGui::SameLine();
+      qChanged = qChanged | ImGui::DragFloat("##qhigh", &quantileHigh.get(), 0.001f, quantileLow.get(), 1.f, "%.3f",
+                                             ImGuiSliderFlags_NoRoundToFormat);
+      if (qChanged) {
+        quantileLow.manuallyChanged();
+        quantileHigh.manuallyChanged();
+        recomputeQuantileRange();
+      }
+      ImGui::Text("colormap range: [%.5g, %.5g]", vizRangeMin.get(), vizRangeMax.get());
+
+    } else {
+
     switch (dataType) {
     case DataType::STANDARD: {
 
@@ -140,6 +167,8 @@ void ScalarQuantity<QuantityT>::buildScalarUI() {
       vizRangeMax.manuallyChanged();
       requestRedraw();
     }
+
+    } // end absolute-mode range controls
 
     ImGui::PopItemWidth();
   }
@@ -217,6 +246,12 @@ void ScalarQuantity<QuantityT>::buildScalarUI() {
 template <typename QuantityT>
 void ScalarQuantity<QuantityT>::buildScalarOptionsUI() {
   if (ImGui::MenuItem("Reset colormap range")) resetMapRange();
+  if (dataType == DataType::STANDARD) {
+    bool isQuantile = mapRangeMode.get() == MapRangeMode::Quantile;
+    if (ImGui::MenuItem("Quantile range", NULL, isQuantile)) {
+      setMapRangeMode(isQuantile ? MapRangeMode::Absolute : MapRangeMode::Quantile);
+    }
+  }
   if (dataType != DataType::CATEGORICAL) {
     if (ImGui::MenuItem("Enable isolines", NULL, isolinesEnabled.get())) setIsolinesEnabled(!isolinesEnabled.get());
   }
@@ -300,6 +335,11 @@ void ScalarQuantity<QuantityT>::updateData(const V& newValues) {
   validateSize(newValues, values.size(), "scalar quantity " + quantity.name);
   values.data = standardizeArray<float, V>(newValues);
   values.markHostBufferUpdated();
+
+  // In quantile mode the viz range tracks the data, so refresh it after the data changes.
+  if (dataType == DataType::STANDARD && mapRangeMode.get() == MapRangeMode::Quantile) {
+    recomputeQuantileRange();
+  }
 }
 
 
@@ -318,6 +358,7 @@ std::string ScalarQuantity<QuantityT>::getColorMap() {
 
 template <typename QuantityT>
 QuantityT* ScalarQuantity<QuantityT>::setMapRange(std::pair<double, double> val) {
+  mapRangeMode = MapRangeMode::Absolute; // explicit limits override any quantile tracking
   vizRangeMin = val.first;
   vizRangeMax = val.second;
   requestRedraw();
@@ -330,6 +371,78 @@ std::pair<double, double> ScalarQuantity<QuantityT>::getMapRange() {
 template <typename QuantityT>
 std::pair<double, double> ScalarQuantity<QuantityT>::getDataRange() {
   return dataRange;
+}
+
+template <typename QuantityT>
+QuantityT* ScalarQuantity<QuantityT>::setMapRangeMode(MapRangeMode mode) {
+  mapRangeMode = mode;
+  if (dataType == DataType::STANDARD && mode == MapRangeMode::Quantile) {
+    recomputeQuantileRange();
+  }
+  requestRedraw();
+  return &quantity;
+}
+template <typename QuantityT>
+MapRangeMode ScalarQuantity<QuantityT>::getMapRangeMode() {
+  return mapRangeMode.get();
+}
+
+template <typename QuantityT>
+QuantityT* ScalarQuantity<QuantityT>::setMapRangeQuantile(std::pair<double, double> quantiles) {
+  quantileLow = static_cast<float>(quantiles.first);
+  quantileHigh = static_cast<float>(quantiles.second);
+  mapRangeMode = MapRangeMode::Quantile;
+  if (dataType == DataType::STANDARD) {
+    recomputeQuantileRange();
+  }
+  requestRedraw();
+  return &quantity;
+}
+template <typename QuantityT>
+std::pair<double, double> ScalarQuantity<QuantityT>::getMapRangeQuantile() {
+  return std::pair<double, double>(quantileLow.get(), quantileHigh.get());
+}
+
+template <typename QuantityT>
+void ScalarQuantity<QuantityT>::recomputeQuantileRange() {
+  // Collect finite values; non-finite entries are excluded just as in robustMinMax.
+  std::vector<float> finite;
+  finite.reserve(values.data.size());
+  for (float v : values.data) {
+    if (std::isfinite(v)) finite.push_back(v);
+  }
+
+  std::pair<double, double> range;
+  if (finite.empty()) {
+    range = dataRange; // no usable values; fall back to the full data range
+  } else {
+    float qLow = std::min(std::max(quantileLow.get(), 0.f), 1.f);
+    float qHigh = std::min(std::max(quantileHigh.get(), 0.f), 1.f);
+    if (qLow > qHigh) std::swap(qLow, qHigh);
+
+    // Nearest-rank quantile via O(n) average selection.
+    auto nearestRank = [&](float q) -> float {
+      size_t idx = static_cast<size_t>(std::lround(q * (finite.size() - 1)));
+      std::nth_element(finite.begin(), finite.begin() + idx, finite.end());
+      return finite[idx];
+    };
+    float lo = nearestRank(qLow);
+    float hi = nearestRank(qHigh);
+    if (hi < lo) std::swap(lo, hi);
+
+    if (hi > lo) {
+      range = std::pair<double, double>(static_cast<double>(lo), static_cast<double>(hi));
+    } else {
+      // Degenerate (near-constant) selection; widen to a robust range so the colormap is usable.
+      range = robustMinMax(finite, 1e-5);
+    }
+  }
+
+  vizRangeMin = range.first;
+  vizRangeMax = range.second;
+  vizRangeMin.clearCache(); // viz range is derived from data, not an explicit user setting
+  vizRangeMax.clearCache();
+  requestRedraw();
 }
 
 template <typename QuantityT>

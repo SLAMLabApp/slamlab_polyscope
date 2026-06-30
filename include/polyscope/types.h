@@ -27,6 +27,11 @@ enum class VolumeCellType { TET = 0, HEX };
 enum class VolumeGridElement { NODE = 0, CELL };
 enum class IsolineStyle { Stripe = 0, Contour };
 
+// How the colormap range of a scalar quantity is determined.
+// Absolute: vminmax are explicit data values.
+// Quantile: vminmax track the given low/high quantiles of the data and adapt as the data changes.
+enum class MapRangeMode { Absolute = 0, Quantile };
+
 enum class ImplicitRenderMode { SphereMarch, FixedStep };
 enum class ImageOrigin { LowerLeft, UpperLeft };
 enum class FilterMode { Nearest = 0, Linear };

@@ -23,6 +23,7 @@ PersistentCache<BackFacePolicy> persistentCache_BackFacePolicy;
 PersistentCache<MeshShadeStyle> persistentCache_MeshNormalType;
 PersistentCache<FilterMode> persistentCache_FilterMode;
 PersistentCache<IsolineStyle> persistentCache_IsolineStyle;
+PersistentCache<MapRangeMode> persistentCache_MapRangeMode;
 PersistentCache<MeshSelectionMode> persistentCache_MeshSelectionMode;
 // clang-format on
 } // namespace detail

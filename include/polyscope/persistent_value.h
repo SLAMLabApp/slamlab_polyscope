@@ -145,6 +145,7 @@ extern PersistentCache<BackFacePolicy> persistentCache_BackFacePolicy;
 extern PersistentCache<MeshShadeStyle> persistentCache_MeshNormalType;
 extern PersistentCache<FilterMode>     persistentCache_FilterMode;
 extern PersistentCache<IsolineStyle>   persistentCache_IsolineStyle;
+extern PersistentCache<MapRangeMode>   persistentCache_MapRangeMode;
 extern PersistentCache<MeshSelectionMode>   persistentCache_MeshSelectionMode;
 
 template<> inline PersistentCache<double>&                   getPersistentCacheRef<double>()                   { return persistentCache_double; }
@@ -162,6 +163,7 @@ template<> inline PersistentCache<BackFacePolicy>&           getPersistentCacheR
 template<> inline PersistentCache<MeshShadeStyle>&           getPersistentCacheRef<MeshShadeStyle>()           { return persistentCache_MeshNormalType; }
 template<> inline PersistentCache<FilterMode>&               getPersistentCacheRef<FilterMode>()               { return persistentCache_FilterMode; }
 template<> inline PersistentCache<IsolineStyle>&             getPersistentCacheRef<IsolineStyle>()             { return persistentCache_IsolineStyle; }
+template<> inline PersistentCache<MapRangeMode>&             getPersistentCacheRef<MapRangeMode>()             { return persistentCache_MapRangeMode; }
 template<> inline PersistentCache<MeshSelectionMode>&        getPersistentCacheRef<MeshSelectionMode>()        { return persistentCache_MeshSelectionMode; }
 }
 // clang-format on
