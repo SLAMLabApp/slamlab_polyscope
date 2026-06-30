@@ -16,8 +16,8 @@ ScalarQuantity<QuantityT>::ScalarQuantity(QuantityT& quantity_, const std::vecto
       vizRangeMin(quantity.uniquePrefix() + "vizRangeMin", -777.), // set later,
       vizRangeMax(quantity.uniquePrefix() + "vizRangeMax", -777.), // including clearing cache
       mapRangeMode(quantity.uniquePrefix() + "mapRangeMode", MapRangeMode::Absolute),
-      quantileLow(quantity.uniquePrefix() + "quantileLow", 0.05f),
-      quantileHigh(quantity.uniquePrefix() + "quantileHigh", 0.95f),
+      quantileLow(quantity.uniquePrefix() + "quantileLow", 0.10f),
+      quantileHigh(quantity.uniquePrefix() + "quantileHigh", 0.90f),
       cMap(quantity.uniquePrefix() + "cmap", defaultColorMap(dataType)),
       isolinesEnabled(quantity.uniquePrefix() + "isolinesEnabled", false),
       isolineStyle(quantity.uniquePrefix() + "isolinesStyle", IsolineStyle::Stripe),
