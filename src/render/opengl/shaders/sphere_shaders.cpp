@@ -353,6 +353,106 @@ R"(
 };
 
 
+// Per-point glow sprite: a camera-facing billboard with a radial falloff, drawn into the glow buffer.
+// The halo is sized in world space, so each point glows identically regardless of viewing direction.
+
+const ShaderStageSpecification GLOW_POINT_SPRITE_VERT_SHADER = {
+
+    ShaderStageType::Vertex,
+
+    // uniforms
+    {
+        {"u_modelView", RenderDataType::Matrix44Float},
+    },
+
+    // attributes
+    {
+        {"a_position", RenderDataType::Vector3Float},
+    },
+
+    {}, // textures
+
+    // source
+R"(
+        ${ GLSL_VERSION }$
+        in vec3 a_position;
+        uniform mat4 u_modelView;
+        void main() {
+            gl_Position = u_modelView * vec4(a_position, 1.0);
+        }
+)"
+};
+
+const ShaderStageSpecification GLOW_POINT_SPRITE_GEOM_SHADER = {
+
+    ShaderStageType::Geometry,
+
+    // uniforms
+    {
+        {"u_projMatrix", RenderDataType::Matrix44Float},
+        {"u_pointRadius", RenderDataType::Float},
+    },
+
+    {}, // attributes
+    {}, // textures
+
+    // source
+R"(
+        ${ GLSL_VERSION }$
+        layout(points) in;
+        layout(triangle_strip, max_vertices=4) out;
+        uniform mat4 u_projMatrix;
+        uniform float u_pointRadius;
+        out vec2 tCoord;
+
+        void main() {
+            vec3 dirToCam = normalize(-gl_in[0].gl_Position.xyz);
+            vec3 refDir = abs(dirToCam.y) < 0.99 ? vec3(0., 1., 0.) : vec3(1., 0., 0.);
+            vec3 basisX = normalize(cross(dirToCam, refDir));
+            vec3 basisY = normalize(cross(dirToCam, basisX));
+
+            vec4 center = u_projMatrix * gl_in[0].gl_Position;
+            vec4 dx = u_projMatrix * (vec4(basisX, 0.) * u_pointRadius);
+            vec4 dy = u_projMatrix * (vec4(basisY, 0.) * u_pointRadius);
+
+            tCoord = vec2(-1., -1.); gl_Position = center - dx - dy; EmitVertex();
+            tCoord = vec2( 1., -1.); gl_Position = center + dx - dy; EmitVertex();
+            tCoord = vec2(-1.,  1.); gl_Position = center - dx + dy; EmitVertex();
+            tCoord = vec2( 1.,  1.); gl_Position = center + dx + dy; EmitVertex();
+            EndPrimitive();
+        }
+)"
+};
+
+const ShaderStageSpecification GLOW_POINT_SPRITE_FRAG_SHADER = {
+
+    ShaderStageType::Fragment,
+
+    // uniforms
+    {
+        {"u_glowColor", RenderDataType::Vector3Float},
+    },
+
+    {}, // attributes
+    {}, // textures
+
+    // source
+R"(
+        ${ GLSL_VERSION }$
+        in vec2 tCoord;
+        uniform vec3 u_glowColor;
+        layout(location = 0) out vec4 outputF;
+
+        void main() {
+            float r = length(tCoord);
+            if (r > 1.0) discard;
+            float falloff = 1.0 - smoothstep(0.0, 1.0, r); // soft radial halo, 1 at center to 0 at edge
+            outputF = vec4(u_glowColor * falloff, falloff);
+        }
+)"
+};
+
+
 // == Rules
 
 const ShaderReplacementRule SPHERE_PROPAGATE_VALUE (

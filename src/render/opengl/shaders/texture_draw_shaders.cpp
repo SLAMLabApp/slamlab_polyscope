@@ -582,6 +582,36 @@ R"(
 )"
 };
 
+const ShaderStageSpecification GLOW_COMPOSITE = {
+  // Additively blend the glow texture onto the scene, leaving scene alpha untouched.
+
+    // stage
+    ShaderStageType::Fragment,
+
+    // uniforms
+    { },
+
+    // attributes
+    { },
+
+    // textures
+    { {"t_image", 2} },
+
+    // source
+R"(
+      ${ GLSL_VERSION }$
+
+      in vec2 tCoord;
+      uniform sampler2D t_image;
+      layout(location = 0) out vec4 outputF;
+
+      void main()
+      {
+        outputF = vec4(texture(t_image, tCoord).rgb, 0.);
+      }
+)"
+};
+
 const ShaderReplacementRule TEXTURE_ORIGIN_UPPERLEFT (
     /* rule name */ "TEXTURE_ORIGIN_UPPERLEFT",
     { /* replacement sources */

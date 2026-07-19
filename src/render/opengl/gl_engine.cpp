@@ -2168,6 +2168,8 @@ void GLEngine::setDepthMode(DepthMode newMode) {
 }
 
 void GLEngine::setBlendMode(BlendMode newMode) {
+  // Reset the blend equation to the default; only BlendMode::Max overrides it below
+  glBlendEquation(GL_FUNC_ADD);
   switch (newMode) {
   case BlendMode::AlphaOver:
     glEnable(GL_BLEND);
@@ -2192,6 +2194,10 @@ void GLEngine::setBlendMode(BlendMode newMode) {
   case BlendMode::Add:
     glEnable(GL_BLEND);
     glBlendFunc(GL_ONE, GL_ONE);
+    break;
+  case BlendMode::Max:
+    glEnable(GL_BLEND);
+    glBlendEquation(GL_MAX); // per-channel max; overlapping fragments do not accumulate
     break;
   case BlendMode::Source:
     glEnable(GL_BLEND);
@@ -2454,6 +2460,7 @@ void GLEngine::populateDefaultShadersAndRules() {
   registerShaderProgram("SLICE_TETS", {SLICE_TETS_VERT_SHADER, SLICE_TETS_GEOM_SHADER, SLICE_TETS_FRAG_SHADER}, DrawMode::Points);
   registerShaderProgram("RAYCAST_SPHERE", {FLEX_SPHERE_VERT_SHADER, FLEX_SPHERE_GEOM_SHADER, FLEX_SPHERE_FRAG_SHADER}, DrawMode::Points);
   registerShaderProgram("POINT_QUAD", {FLEX_POINTQUAD_VERT_SHADER, FLEX_POINTQUAD_GEOM_SHADER, FLEX_POINTQUAD_FRAG_SHADER}, DrawMode::Points);
+  registerShaderProgram("GLOW_POINT_SPRITE", {GLOW_POINT_SPRITE_VERT_SHADER, GLOW_POINT_SPRITE_GEOM_SHADER, GLOW_POINT_SPRITE_FRAG_SHADER}, DrawMode::Points);
   registerShaderProgram("POINT_VOXEL", {FLEX_POINTVOXEL_VERT_SHADER, FLEX_POINTVOXEL_GEOM_SHADER, FLEX_POINTVOXEL_FRAG_SHADER}, DrawMode::Points);
   registerShaderProgram("GRIDCUBE", {FLEX_GRIDCUBE_VERT_SHADER, FLEX_GRIDCUBE_GEOM_SHADER, FLEX_GRIDCUBE_FRAG_SHADER}, DrawMode::Points);
   registerShaderProgram("GRIDCUBE_PLANE", {FLEX_GRIDCUBE_PLANE_VERT_SHADER, FLEX_GRIDCUBE_PLANE_FRAG_SHADER}, DrawMode::Triangles);
@@ -2480,6 +2487,7 @@ void GLEngine::populateDefaultShadersAndRules() {
   registerShaderProgram("DEPTH_TO_MASK", {TEXTURE_DRAW_VERT_SHADER, DEPTH_TO_MASK}, DrawMode::Triangles);
   registerShaderProgram("SCALAR_TEXTURE_COLORMAP", {TEXTURE_DRAW_VERT_SHADER, SCALAR_TEXTURE_COLORMAP}, DrawMode::Triangles);
   registerShaderProgram("BLUR_RGB", {TEXTURE_DRAW_VERT_SHADER, BLUR_RGB}, DrawMode::Triangles);
+  registerShaderProgram("GLOW_COMPOSITE", {TEXTURE_DRAW_VERT_SHADER, GLOW_COMPOSITE}, DrawMode::Triangles);
   registerShaderProgram("TRANSFORMATION_GIZMO_ROT", {TRANSFORMATION_GIZMO_ROT_VERT, TRANSFORMATION_GIZMO_ROT_FRAG}, DrawMode::Triangles);
 
   // === Load rules

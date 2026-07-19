@@ -21,6 +21,7 @@ extern const ShaderStageSpecification COMPOSITE_PEEL;
 extern const ShaderStageSpecification DEPTH_COPY;
 extern const ShaderStageSpecification DEPTH_TO_MASK;
 extern const ShaderStageSpecification BLUR_RGB;
+extern const ShaderStageSpecification GLOW_COMPOSITE;
 
 extern const ShaderStageSpecification SCALAR_TEXTURE_COLORMAP;
 

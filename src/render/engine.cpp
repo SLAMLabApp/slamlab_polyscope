@@ -467,6 +467,7 @@ void Engine::resizeScreenBuffers() {
   sceneBuffer->resize(ssaaFactor * width, ssaaFactor * height);
   sceneBufferFinal->resize(ssaaFactor * width, ssaaFactor * height);
   sceneDepthMinFrame->resize(ssaaFactor * width, ssaaFactor * height);
+  glowBuffer->resize(ssaaFactor * width, ssaaFactor * height);
 }
 
 void Engine::setScreenBufferViewports() {
@@ -480,11 +481,29 @@ void Engine::setScreenBufferViewports() {
   sceneBuffer->setViewport(ssaaFactor * xStart, ssaaFactor * yStart, ssaaFactor * sizeX, ssaaFactor * sizeY);
   sceneBufferFinal->setViewport(ssaaFactor * xStart, ssaaFactor * yStart, ssaaFactor * sizeX, ssaaFactor * sizeY);
   sceneDepthMinFrame->setViewport(ssaaFactor * xStart, ssaaFactor * yStart, ssaaFactor * sizeX, ssaaFactor * sizeY);
+  glowBuffer->setViewport(ssaaFactor * xStart, ssaaFactor * yStart, ssaaFactor * sizeX, ssaaFactor * sizeY);
 }
 
 bool Engine::bindSceneBuffer() {
   setCurrentPixelScaling(ssaaFactor * options::uiScale);
   return sceneBuffer->bindForRendering();
+}
+
+bool Engine::bindGlowBuffer() {
+  setCurrentPixelScaling(ssaaFactor * options::uiScale);
+  glowBuffer->clear();
+  return glowBuffer->bindForRendering();
+}
+
+void Engine::compositeGlow() {
+
+  // Additively composite the per-point glow sprites onto the resolved scene
+  sceneBufferFinal->bindForRendering();
+  setBlendMode(BlendMode::Add);
+  setDepthMode(DepthMode::Disable);
+  glowComposite->setTextureFromBuffer("t_image", glowColor.get());
+  glowComposite->draw();
+  setBlendMode(BlendMode::Disable);
 }
 
 void Engine::applyLightingTransform(std::shared_ptr<TextureBuffer>& texture) {
@@ -694,6 +713,17 @@ void Engine::allocateGlobalBuffersAndPrograms() {
     sceneBufferFinal->clearAlpha = 0.0;
   }
 
+  { // Glow buffer: per-point glow sprites are drawn here, then composited additively
+    glowColor = generateTextureBuffer(TextureFormat::RGBA16F, view::bufferWidth, view::bufferHeight);
+    glowColor->setFilterMode(FilterMode::Linear);
+
+    glowBuffer = generateFrameBuffer(view::bufferWidth, view::bufferHeight);
+    glowBuffer->addColorBuffer(glowColor);
+    glowBuffer->setDrawBuffers();
+    glowBuffer->clearColor = glm::vec3{0., 0., 0.};
+    glowBuffer->clearAlpha = 0.0;
+  }
+
   { // Alternate display buffer
     std::shared_ptr<RenderBuffer> sceneColorAlt =
         generateRenderBuffer(RenderBufferType::ColorAlpha, view::bufferWidth, view::bufferHeight);
@@ -743,6 +773,9 @@ void Engine::allocateGlobalBuffersAndPrograms() {
     copyDepth = render::engine->requestShader("DEPTH_COPY", {}, render::ShaderReplacementDefaults::Process);
     copyDepth->setAttribute("a_position", screenTrianglesCoords());
     copyDepth->setTextureFromBuffer("t_depth", sceneDepth.get());
+
+    glowComposite = render::engine->requestShader("GLOW_COMPOSITE", {}, render::ShaderReplacementDefaults::Process);
+    glowComposite->setAttribute("a_position", screenTrianglesCoords());
     // clang-format on
   }
 

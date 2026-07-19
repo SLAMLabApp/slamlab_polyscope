@@ -39,7 +39,7 @@ enum class DrawMode {
 enum class TextureFormat { RGB8 = 0, RGBA8, RG16F, RGB16F, RGBA16F, RGBA32F, RGB32F, R32F, R16F, DEPTH24 };
 enum class RenderBufferType { Color, ColorAlpha, Depth, Float4 };
 enum class DepthMode { Less, LEqual, LEqualReadOnly, Greater, Disable, PassReadOnly };
-enum class BlendMode { AlphaOver, OverNoWrite, AlphaUnder, Zero, WeightedAdd, Add, Source, Disable };
+enum class BlendMode { AlphaOver, OverNoWrite, AlphaUnder, Zero, WeightedAdd, Add, Max, Source, Disable };
 enum class RenderDataType {
   Vector2Float,
   Vector3Float,
@@ -466,6 +466,11 @@ public:
   void updateMinDepthTexture();
   void renderBackground(); // respects background setting
 
+  // Additive glow effect for structures that opt in.
+  // Structures draw per-point glow sprites into a dedicated buffer, which is composited onto the scene.
+  bool bindGlowBuffer();  // bind and clear the glow buffer
+  void compositeGlow();   // additively composite the glow buffer onto sceneBufferFinal
+
   // Manage render state
   virtual void setDepthMode(DepthMode newMode) = 0;
   virtual void setBlendMode(BlendMode newMode) = 0;
@@ -566,17 +571,20 @@ public:
   std::shared_ptr<FrameBuffer> sceneBuffer, sceneBufferFinal;
   std::shared_ptr<FrameBuffer> pickFramebuffer;
   std::shared_ptr<FrameBuffer> sceneDepthMinFrame;
+  std::shared_ptr<FrameBuffer> glowBuffer;
   FrameBuffer& getDisplayBuffer();
 
   // Main buffers for rendering
   // sceneDepthMin is an optional texture copy of the depth buffe used for some effects
   std::shared_ptr<TextureBuffer> sceneColor, sceneColorFinal, sceneDepth, sceneDepthMin;
+  std::shared_ptr<TextureBuffer> glowColor;
   std::shared_ptr<RenderBuffer> pickColorBuffer, pickDepthBuffer;
   TextureBuffer& getFinalSceneColorTexture();
 
   // General-use programs used by the engine
   std::shared_ptr<ShaderProgram> renderTexturePlain, renderTextureDot3, renderTextureMap3, renderTextureSphereBG;
   std::shared_ptr<ShaderProgram> compositePeel, mapLight, copyDepth;
+  std::shared_ptr<ShaderProgram> glowComposite;
 
   // Manage transparency and culling
   void setTransparencyMode(TransparencyMode newMode);

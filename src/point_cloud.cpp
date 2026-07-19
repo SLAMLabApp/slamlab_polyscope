@@ -33,7 +33,10 @@ PointCloud::PointCloud(std::string name, std::vector<glm::vec3> points_)
       material(uniquePrefix() + "material", "clay"),
       edgeEnabled(uniquePrefix() + "edgeEnabled", false),
       edgeColor(uniquePrefix() + "edgeColor", glm::vec3{0., 0., 0.}),
-      edgeWidth(uniquePrefix() + "edgeWidth", 0.f)
+      edgeWidth(uniquePrefix() + "edgeWidth", 0.f),
+      glowEnabled(uniquePrefix() + "glowEnabled", false),
+      glowStrength(uniquePrefix() + "glowStrength", 1.f),
+      glowRadius(uniquePrefix() + "glowRadius", 1.f)
 // clang-format on
 {
   points.checkInvalidValues();
@@ -161,6 +164,37 @@ void PointCloud::drawPickDelayed() {
   for (auto& x : floatingQuantities) {
     x.second->drawPickDelayed();
   }
+}
+
+bool PointCloud::wantsGlow() { return isEnabled() && glowEnabled.get() && dominantQuantity == nullptr; }
+
+void PointCloud::drawGlow() {
+  if (!wantsGlow()) {
+    return;
+  }
+
+  ensureGlowProgramPrepared();
+
+  glm::mat4 modelView = getModelView();
+  glm::mat4 projMatrix = view::getCameraPerspectiveMatrix();
+  glowProgram->setUniform("u_modelView", glm::value_ptr(modelView));
+  glowProgram->setUniform("u_projMatrix", glm::value_ptr(projMatrix));
+
+  // Halo radius is set in world units (scaled with the point size), so each point's glow looks the
+  // same from any viewing direction. The base spread makes the halo extend beyond the point itself.
+  constexpr float glowSpriteSpread = 4.0f;
+  float haloRadius = static_cast<float>(pointRadius.get().asAbsolute()) * glowRadius.get() * glowSpriteSpread;
+  glowProgram->setUniform("u_pointRadius", haloRadius);
+  glowProgram->setUniform("u_glowColor", static_cast<float>(glowStrength.get()) * pointColor.get());
+
+  glowProgram->draw();
+}
+
+void PointCloud::ensureGlowProgramPrepared() {
+  if (glowProgram) return;
+
+  glowProgram = render::engine->requestShader("GLOW_POINT_SPRITE", {}, render::ShaderReplacementDefaults::Process);
+  glowProgram->setAttribute("a_position", points.getRenderAttributeBuffer());
 }
 
 void PointCloud::ensureRenderProgramPrepared() {
@@ -375,6 +409,25 @@ void PointCloud::buildCustomUI() {
     }
     ImGui::PopItemWidth();
   }
+
+  // Glow options
+  ImGui::PushItemWidth(100 * options::uiScale);
+  if (ImGui::Checkbox("Glow", &glowEnabled.get())) {
+    setGlowEnabled(glowEnabled.get());
+  }
+  if (glowEnabled.get()) {
+    ImGui::PushItemWidth(100 * options::uiScale);
+    if (ImGui::SliderFloat("Strength", &glowStrength.get(), 0.0, 5.)) {
+      glowStrength.manuallyChanged();
+      requestRedraw();
+    }
+    if (ImGui::SliderFloat("Halo size", &glowRadius.get(), 0.5, 5.)) {
+      glowRadius.manuallyChanged();
+      requestRedraw();
+    }
+    ImGui::PopItemWidth();
+  }
+  ImGui::PopItemWidth();
 }
 
 void PointCloud::buildCustomOptionsUI() {
@@ -469,6 +522,7 @@ std::string PointCloud::typeName() { return structureTypeName; }
 void PointCloud::refresh() {
   program.reset();
   pickProgram.reset();
+  glowProgram.reset();
   QuantityStructure<PointCloud>::refresh(); // call base class version, which refreshes quantities
 }
 
@@ -654,5 +708,26 @@ PointCloud* PointCloud::setEdgeWidth(double newVal) {
   return this;
 }
 double PointCloud::getEdgeWidth() { return edgeWidth.get(); }
+
+PointCloud* PointCloud::setGlowEnabled(bool newVal) {
+  glowEnabled = newVal;
+  requestRedraw();
+  return this;
+}
+bool PointCloud::getGlowEnabled() { return glowEnabled.get(); }
+
+PointCloud* PointCloud::setGlowStrength(double newVal) {
+  glowStrength = newVal;
+  requestRedraw();
+  return this;
+}
+double PointCloud::getGlowStrength() { return glowStrength.get(); }
+
+PointCloud* PointCloud::setGlowRadius(double newVal) {
+  glowRadius = newVal;
+  requestRedraw();
+  return this;
+}
+double PointCloud::getGlowRadius() { return glowRadius.get(); }
 
 } // namespace polyscope

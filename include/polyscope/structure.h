@@ -45,6 +45,8 @@ public:
   virtual void drawPick() = 0;
   virtual void drawDelayed() = 0; // a second render pass
   virtual void drawPickDelayed() = 0;
+  virtual void drawGlow() {}                 // draw per-point glow sprites into the glow buffer
+  virtual bool wantsGlow() { return false; } // true if the glow effect is enabled
 
   // == Add rendering rules
   std::vector<std::string> addStructureRules(std::vector<std::string> initRules);

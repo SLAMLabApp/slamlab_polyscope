@@ -17,6 +17,10 @@ extern const ShaderStageSpecification FLEX_POINTQUAD_VERT_SHADER;
 extern const ShaderStageSpecification FLEX_POINTQUAD_GEOM_SHADER;
 extern const ShaderStageSpecification FLEX_POINTQUAD_FRAG_SHADER;
 
+extern const ShaderStageSpecification GLOW_POINT_SPRITE_VERT_SHADER;
+extern const ShaderStageSpecification GLOW_POINT_SPRITE_GEOM_SHADER;
+extern const ShaderStageSpecification GLOW_POINT_SPRITE_FRAG_SHADER;
+
 // Rules specific to spheres
 extern const ShaderReplacementRule SPHERE_PROPAGATE_VALUE;
 extern const ShaderReplacementRule SPHERE_PROPAGATE_VALUEALPHA;

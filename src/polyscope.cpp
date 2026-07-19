@@ -416,6 +416,33 @@ void drawStructuresDelayed() {
   }
 }
 
+// Draw the emissive glow pass and composite it onto the resolved scene.
+// No-op unless at least one structure has the glow effect enabled.
+void drawStructureGlow() {
+
+  bool anyGlow = false;
+  for (auto& catMap : state::structures) {
+    for (auto& s : catMap.second) {
+      if (s.second->wantsGlow()) anyGlow = true;
+    }
+  }
+  if (!anyGlow) return;
+
+  render::engine->bindGlowBuffer();
+  // Every point glows regardless of occlusion or viewing angle: no depth test so hidden points still
+  // contribute, and max blending so overlapping points do not accumulate into view-dependent hotspots.
+  render::engine->setDepthMode(DepthMode::Disable);
+  render::engine->setBlendMode(BlendMode::Max);
+
+  for (auto& catMap : state::structures) {
+    for (auto& s : catMap.second) {
+      s.second->drawGlow();
+    }
+  }
+
+  render::engine->compositeGlow();
+}
+
 namespace {
 
 float dragDistSinceLastRelease = 0.0;
@@ -635,6 +662,8 @@ void renderScene() {
 
     render::engine->sceneBuffer->blitTo(render::engine->sceneBufferFinal.get());
   }
+
+  drawStructureGlow();
 }
 
 void renderSceneToScreen() {

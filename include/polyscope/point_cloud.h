@@ -63,6 +63,8 @@ public:
   virtual void drawDelayed() override;
   virtual void drawPick() override;
   virtual void drawPickDelayed() override;
+  virtual void drawGlow() override;
+  virtual bool wantsGlow() override;
   virtual void updateObjectSpaceBounds() override;
   virtual std::string typeName() override;
   virtual void refresh() override;
@@ -183,6 +185,15 @@ public:
   PointCloud* setEdgeWidth(double newVal);
   double getEdgeWidth();
 
+  // Additive glow: each point emits a soft halo in its point color.
+  // Glow strength scales the halo brightness; glow radius scales the halo size.
+  PointCloud* setGlowEnabled(bool newVal);
+  bool getGlowEnabled();
+  PointCloud* setGlowStrength(double newVal);
+  double getGlowStrength();
+  PointCloud* setGlowRadius(double newVal);
+  double getGlowRadius();
+
   // Rendering helpers used by quantities
   void setPointCloudUniforms(render::ShaderProgram& p);
   void setPointProgramGeometryAttributes(render::ShaderProgram& p);
@@ -204,16 +215,21 @@ private:
   PersistentValue<bool> edgeEnabled;
   PersistentValue<glm::vec3> edgeColor;
   PersistentValue<float> edgeWidth;
+  PersistentValue<bool> glowEnabled;
+  PersistentValue<float> glowStrength;
+  PersistentValue<float> glowRadius;
 
   // Drawing related things
   // if nullptr, prepare() (resp. preparePick()) needs to be called
   std::shared_ptr<render::ShaderProgram> program;
   std::shared_ptr<render::ShaderProgram> pickProgram;
+  std::shared_ptr<render::ShaderProgram> glowProgram;
 
   // === Helpers
   // Do setup work related to drawing, including allocating openGL data
   void ensureRenderProgramPrepared();
   void ensurePickProgramPrepared();
+  void ensureGlowProgramPrepared();
 
   // === Quantity adder implementations
   PointCloudScalarQuantity* addScalarQuantityImpl(std::string name, const std::vector<float>& data, DataType type);
