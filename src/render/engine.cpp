@@ -503,7 +503,10 @@ void Engine::compositeGlow() {
   setDepthMode(DepthMode::Disable);
   glowComposite->setTextureFromBuffer("t_image", glowColor.get());
   glowComposite->draw();
+
+  // Restore the standard opaque-draw state, since the glow pass disabled depth testing
   setBlendMode(BlendMode::Disable);
+  setDepthMode(DepthMode::Less);
 }
 
 void Engine::applyLightingTransform(std::shared_ptr<TextureBuffer>& texture) {

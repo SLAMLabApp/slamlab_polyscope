@@ -412,8 +412,14 @@ void PointCloud::buildCustomUI() {
 
   // Glow options
   ImGui::PushItemWidth(100 * options::uiScale);
+  // Glow draws in the point color, so it is unavailable while a quantity drives the coloring.
+  bool glowAvailable = dominantQuantity == nullptr;
+  ImGui::BeginDisabled(!glowAvailable);
   if (ImGui::Checkbox("Glow", &glowEnabled.get())) {
     setGlowEnabled(glowEnabled.get());
+  }
+  if (!glowAvailable && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
+    ImGui::SetTooltip("Glow uses the point color and is inactive while a quantity is shown");
   }
   if (glowEnabled.get()) {
     ImGui::PushItemWidth(100 * options::uiScale);
@@ -427,6 +433,7 @@ void PointCloud::buildCustomUI() {
     }
     ImGui::PopItemWidth();
   }
+  ImGui::EndDisabled();
   ImGui::PopItemWidth();
 }
 
